@@ -6,10 +6,14 @@ use Zenstruck\Redis;
 
 /**
  * @author Kevin Bond <kevinbond@gmail.com>
+ *
+ * @implements \IteratorAggregate<int,mixed>
  */
 final class ExpiringSet implements \Countable, \IteratorAggregate
 {
     private Redis $client;
+
+    /** @var list<mixed> */
     private array $cachedList;
 
     public function __construct(private string $key, \Redis|\RedisArray|\RedisCluster|Redis $client)

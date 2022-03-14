@@ -213,6 +213,9 @@ final class Sequence
     ) {
     }
 
+    /**
+     * @param list<mixed> $arguments
+     */
     public function __call(string $method, array $arguments): self
     {
         $this->redis->{$method}(...$arguments);
@@ -229,6 +232,9 @@ final class Sequence
         return new self($this->redis->multi(), true, $this);
     }
 
+    /**
+     * @return list<mixed>|self
+     */
     public function exec(): array|self
     {
         if ($this->nested) {
@@ -237,6 +243,6 @@ final class Sequence
             return $this->nested;
         }
 
-        return $this->redis->exec();
+        return \is_array($result = $this->redis->exec()) ? $result : [];
     }
 }

@@ -1,5 +1,5 @@
 parameters:
-    level: 4
+    level: 8
     treatPhpDocTypesAsCertain: false
     paths:
         - src
@@ -7,3 +7,11 @@ parameters:
         -
             message: '#.+#'
             path: src/Redis/DsnFactory.php
+        -
+            message: "#^Cannot access offset 1 on array\\<int, mixed\\>\\|Zenstruck\\\\Redis\\\\Sequence\\.$#"
+            count: 1
+            path: src/Redis/Utility/ExpiringSet.php
+        -
+            message: "#^Cannot call method add\\(\\) on DateTime\\|false\\.$#"
+            count: 1
+            path: src/Redis/Utility/ExpiringSet.php
