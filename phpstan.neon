@@ -1,0 +1,9 @@
+parameters:
+    level: 4
+    treatPhpDocTypesAsCertain: false
+    paths:
+        - src
+    ignoreErrors:
+        -
+            message: '#.+#'
+            path: src/Redis/DsnFactory.php
