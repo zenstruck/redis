@@ -24,7 +24,7 @@ final class SequenceTest extends TestCase
                 [true, 43],
                 true,
                 ['43', 1],
-                true
+                true,
             ],
             $redis->pipeline()
                 ->ping()
@@ -58,7 +58,7 @@ final class SequenceTest extends TestCase
                 true,
                 '43',
                 1,
-                true
+                true,
             ],
             $redis->multi()
                 ->ping()
