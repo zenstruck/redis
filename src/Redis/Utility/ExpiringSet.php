@@ -20,10 +20,10 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
     public function push(mixed $value, int|\DateInterval $ttl): self
     {
         if ($ttl instanceof \DateInterval) {
-            $ttl = (int) \DateTime::createFromFormat('U', 0)->add($ttl)->format('U');
+            $ttl = (float) \DateTime::createFromFormat('U', '0')->add($ttl)->format('U.u');
         }
 
-        $time = \time();
+        $time = \microtime(true);
 
         $this->client->pipeline()
             ->zRemRangeByScore($this->key, 0, $time)
@@ -50,7 +50,7 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
             return $this->cachedList;
         }
 
-        $time = \time();
+        $time = \microtime(true);
 
         $result = $this->client->pipeline()
             ->zRemRangeByScore($this->key, 0, $time)
@@ -63,7 +63,7 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
 
     public function prune(): self
     {
-        $this->client->zRemRangeByScore($this->key, 0, \time());
+        $this->client->zRemRangeByScore($this->key, 0, \microtime(true));
 
         unset($this->cachedList);
 

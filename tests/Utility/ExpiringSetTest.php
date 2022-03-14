@@ -34,8 +34,8 @@ final class ExpiringSetTest extends TestCase
         $set->push('bar', 60)->push('baz', 60)->prune();
 
         $this->assertCount(3, $set);
-        $this->assertSame(['bar', 'baz', 'foo'], $set->all());
-        $this->assertSame(['bar', 'baz', 'foo'], \iterator_to_array($set));
+        $this->assertSame(['foo', 'bar', 'baz'], $set->all());
+        $this->assertSame(['foo', 'bar', 'baz'], \iterator_to_array($set));
         $this->assertTrue($set->contains('foo'));
         $this->assertTrue($set->contains('bar'));
         $this->assertTrue($set->contains('baz'));
@@ -68,13 +68,13 @@ final class ExpiringSetTest extends TestCase
         $set->push('foo', 60)->push('bar', 60);
 
         $this->assertCount(2, $set);
-        $this->assertSame(['bar', 'foo'], $set->all());
+        $this->assertSame(['foo', 'bar'], $set->all());
 
         $redis->zAdd('set_key', 10, 'foo'); // expire this item
 
         // ensure still cached
         $this->assertCount(2, $set);
-        $this->assertSame(['bar', 'foo'], $set->all());
+        $this->assertSame(['foo', 'bar'], $set->all());
 
         $set->prune();
 
@@ -108,7 +108,7 @@ final class ExpiringSetTest extends TestCase
 
         $set = $redis->expiringSet('set_key')->push('baz', 60);
 
-        $this->assertSame(['baz', 'foo'], $set->all());
+        $this->assertSame(['foo', 'baz'], $set->all());
     }
 
     /**
