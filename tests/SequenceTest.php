@@ -19,24 +19,20 @@ abstract class SequenceTest extends TestCase
     {
         $this->assertSame(
             [
-                true,
                 [true, 43],
-                true,
-                ['43', 1],
-                true,
+                44,
+                ['44', 1],
             ],
             $this->createRedis()->sequence()
-                ->ping()
                 ->multi()
                     ->set('x', '42')
                     ->incr('x')
                 ->exec()
-                ->ping()
+                ->incr('x')
                 ->multi()
                     ->get('x')
                     ->del('x')
                 ->exec()
-                ->ping()
                 ->exec()
         );
 
@@ -51,21 +47,15 @@ abstract class SequenceTest extends TestCase
         $this->assertSame(
             [
                 true,
-                true,
                 43,
-                true,
                 '43',
                 1,
-                true,
             ],
             $this->createRedis()->transaction()
-                ->ping()
                 ->set('x', '42')
                 ->incr('x')
-                ->ping()
                 ->get('x')
                 ->del('x')
-                ->ping()
                 ->exec()
         );
 
