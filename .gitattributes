@@ -1,3 +1,6 @@
 /.github export-ignore
 /tests export-ignore
 /bin export-ignore
+docker-compose.yml export-ignore
+phpunit.dist.xml export-ignore
+phpunit.docker.xml export-ignore

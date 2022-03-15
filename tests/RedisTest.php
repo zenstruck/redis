@@ -44,10 +44,17 @@ final class RedisTest extends TestCase
      * @test
      * @dataProvider redisProvider
      */
-    public function basic_operation(Redis $redis): void
+    public function basic_operations(Redis $redis): void
     {
+        $this->assertSame(0, $redis->exists('foo'));
+
         $redis->set('foo', 'bar');
 
         $this->assertSame('bar', $redis->get('foo'));
+        $this->assertSame(1, $redis->exists('foo'));
+
+        $redis->del('foo');
+
+        $this->assertSame(0, $redis->exists('foo'));
     }
 }

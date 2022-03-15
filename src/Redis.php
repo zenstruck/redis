@@ -69,15 +69,11 @@ final class Redis
     {
         $client = $this->client();
 
-        if ($client instanceof \Redis) {
-            return $this;
-        }
-
         if ($client instanceof \RedisArray) {
             return new self($client->_instance($client->_target($key)));
         }
 
-        throw new \LogicException('todo - RedisCluster...');
+        return $this;
     }
 
     public function sequence(): Sequence

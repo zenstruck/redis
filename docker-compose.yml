@@ -1,0 +1,18 @@
+version: '3'
+services:
+  redis:
+    image: redis:6.0
+    ports:
+      - 16379:6379
+  redis-cluster:
+    image: grokzen/redis-cluster:5.0.4
+    ports:
+      - 7000:7000
+      - 7001:7001
+      - 7002:7002
+      - 7003:7003
+      - 7004:7004
+      - 7005:7005
+      - 7006:7006
+    environment:
+      - STANDALONE=1
