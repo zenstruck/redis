@@ -6,6 +6,10 @@ on:
   schedule:
     - cron: '0 0 1,16 * *'
 
+env:
+  REDIS_HOST1: localhost:16379
+  REDIS_HOST2: 127.0.0.1:16379
+
 jobs:
   tests:
     name: PHP ${{ matrix.php }} - ${{ matrix.deps }}
