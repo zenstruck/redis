@@ -29,7 +29,7 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
 
         $time = \microtime(true);
 
-        $this->client->instanceFor($this->key)->transaction()
+        $this->client->transaction($this->key)
             ->zRemRangeByScore($this->key, 0, $time)
             ->zAdd($this->key, $time + $ttl, $value)
             ->exec()
@@ -56,7 +56,7 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
 
         $time = \microtime(true);
 
-        $result = $this->client->instanceFor($this->key)->transaction()
+        $result = $this->client->transaction($this->key)
             ->zRemRangeByScore($this->key, 0, $time)
             ->zRangeByScore($this->key, $time, '+inf')
             ->exec()

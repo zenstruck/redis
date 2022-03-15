@@ -23,7 +23,7 @@ abstract class SequenceTest extends TestCase
                 44,
                 ['44', 1],
             ],
-            $this->createRedis()->sequence()
+            $this->createRedis()->sequence($this->transactionKey())
                 ->multi()
                     ->set('x', '42')
                     ->incr('x')
@@ -36,7 +36,7 @@ abstract class SequenceTest extends TestCase
                 ->exec()
         );
 
-        $this->assertSame([], $this->createRedis()->sequence()->exec());
+        $this->assertSame([], $this->createRedis()->sequence($this->transactionKey())->exec());
     }
 
     /**
@@ -51,7 +51,7 @@ abstract class SequenceTest extends TestCase
                 '43',
                 1,
             ],
-            $this->createRedis()->transaction()
+            $this->createRedis()->transaction($this->transactionKey())
                 ->set('x', '42')
                 ->incr('x')
                 ->get('x')
@@ -59,7 +59,7 @@ abstract class SequenceTest extends TestCase
                 ->exec()
         );
 
-        $this->assertSame([], $this->createRedis()->transaction()->exec());
+        $this->assertSame([], $this->createRedis()->transaction($this->transactionKey())->exec());
     }
 
     /**
@@ -67,11 +67,16 @@ abstract class SequenceTest extends TestCase
      */
     public function cannot_call_multi_within_transaction(): void
     {
-        $sequence = $this->createRedis()->transaction();
+        $sequence = $this->createRedis()->transaction($this->transactionKey());
 
         $this->expectException(\LogicException::class);
 
         $sequence->multi();
+    }
+
+    protected function transactionKey(): ?string
+    {
+        return null;
     }
 
     abstract protected function createRedis(): Redis;

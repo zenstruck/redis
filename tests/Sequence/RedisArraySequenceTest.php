@@ -13,7 +13,7 @@ final class RedisArraySequenceTest extends SequenceTest
     /**
      * @test
      */
-    public function cannot_create_sequence_without_choosing_instance(): void
+    public function cannot_create_sequence_without_instance_key(): void
     {
         $redis = Redis::create(self::redisArrayDsn());
 
@@ -25,7 +25,7 @@ final class RedisArraySequenceTest extends SequenceTest
     /**
      * @test
      */
-    public function cannot_create_transaction_without_choosing_instance(): void
+    public function cannot_create_transaction_without_instance_key(): void
     {
         $redis = Redis::create(self::redisArrayDsn());
 
@@ -34,8 +34,13 @@ final class RedisArraySequenceTest extends SequenceTest
         $redis->transaction();
     }
 
+    protected function transactionKey(): ?string
+    {
+        return 'foo';
+    }
+
     protected function createRedis(): Redis
     {
-        return Redis::create(self::redisArrayDsn())->instanceFor('foo');
+        return Redis::create(self::redisArrayDsn());
     }
 }

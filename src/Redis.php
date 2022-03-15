@@ -65,38 +65,35 @@ final class Redis
         return $this->client;
     }
 
-    public function instanceFor(string $key): self
-    {
-        $client = $this->client();
-
-        if ($client instanceof \RedisArray) {
-            return new self($client->_instance($client->_target($key)));
-        }
-
-        return $this;
-    }
-
-    public function sequence(): Sequence
+    public function sequence(?string $key = null): Sequence
     {
         $client = $this->client();
 
         if ($client instanceof \RedisCluster) {
-            throw new \LogicException('todo...');
+            throw new \LogicException('Sequence (pipeline) not available for RedisCluster.');
         }
 
         if ($client instanceof \RedisArray) {
-            throw new \LogicException('You must first choose an instance (with "instanceFor()") before creating a sequence.');
+            if (null === $key) {
+                throw new \LogicException(\sprintf('When using a RedisArray, a key must be passed to %s() to choose an instance.', __METHOD__));
+            }
+
+            $client = $client->_instance($client->_target($key));
         }
 
         return new Sequence($client->pipeline(), false);
     }
 
-    public function transaction(): Sequence
+    public function transaction(?string $key = null): Sequence
     {
         $client = $this->client();
 
         if ($client instanceof \RedisArray) {
-            throw new \LogicException('You must first choose an instance (with "instanceFor()") before creating a transaction.');
+            if (null === $key) {
+                throw new \LogicException(\sprintf('When using a RedisArray, a key must be passed to %s() to choose an instance.', __METHOD__));
+            }
+
+            $client = $client->_instance($client->_target($key));
         }
 
         return new Sequence($client->multi(), true);
