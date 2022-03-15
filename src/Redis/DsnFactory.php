@@ -119,7 +119,11 @@ final class DsnFactory
             throw new \InvalidArgumentException(\sprintf('Cannot use both "redis_cluster" and "redis_sentinel" at the same time: "%s".', $this->dsn));
         }
 
-        $class = $params['class'] ?? $params['redis_cluster'] ? \RedisCluster::class : (1 < \count($hosts) ? \RedisArray::class : \Redis::class);
+        $class = $params['class'] ?? match (true) {
+            false !== $params['redis_cluster'] => \RedisCluster::class,
+            \count($hosts) > 1 => \RedisArray::class,
+            default => \Redis::class,
+        };
 
         if (\is_a($class, \Redis::class, true)) {
             $connect = $params['persistent'] || $params['persistent_id'] ? 'pconnect' : 'connect';
