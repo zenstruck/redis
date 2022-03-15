@@ -8,15 +8,14 @@ use Zenstruck\Redis;
 /**
  * @author Kevin Bond <kevinbond@gmail.com>
  */
-final class SequenceTest extends TestCase
+abstract class SequenceTest extends TestCase
 {
     use RedisProvider;
 
     /**
      * @test
-     * @dataProvider redisProvider
      */
-    public function sequence(Redis $redis): void
+    public function sequence(): void
     {
         $this->assertSame(
             [
@@ -26,7 +25,7 @@ final class SequenceTest extends TestCase
                 ['43', 1],
                 true,
             ],
-            $redis->sequence()
+            $this->createRedis()->sequence()
                 ->ping()
                 ->multi()
                     ->set('x', '42')
@@ -41,14 +40,13 @@ final class SequenceTest extends TestCase
                 ->exec()
         );
 
-        $this->assertSame([], $redis->sequence()->exec());
+        $this->assertSame([], $this->createRedis()->sequence()->exec());
     }
 
     /**
      * @test
-     * @dataProvider redisProvider
      */
-    public function transaction(Redis $redis): void
+    public function transaction(): void
     {
         $this->assertSame(
             [
@@ -60,7 +58,7 @@ final class SequenceTest extends TestCase
                 1,
                 true,
             ],
-            $redis->transaction()
+            $this->createRedis()->transaction()
                 ->ping()
                 ->set('x', '42')
                 ->incr('x')
@@ -71,19 +69,20 @@ final class SequenceTest extends TestCase
                 ->exec()
         );
 
-        $this->assertSame([], $redis->transaction()->exec());
+        $this->assertSame([], $this->createRedis()->transaction()->exec());
     }
 
     /**
      * @test
-     * @dataProvider redisProvider
      */
-    public function cannot_call_multi_within_transaction(Redis $redis): void
+    public function cannot_call_multi_within_transaction(): void
     {
-        $sequence = $redis->transaction();
+        $sequence = $this->createRedis()->transaction();
 
         $this->expectException(\LogicException::class);
 
         $sequence->multi();
     }
+
+    abstract protected function createRedis(): Redis;
 }

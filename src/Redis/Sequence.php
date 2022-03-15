@@ -207,7 +207,7 @@ final class Sequence
      * @internal
      */
     public function __construct(
-        private \Redis|\RedisArray|\RedisCluster $redis,
+        private \Redis|\RedisCluster $redis,
         private bool $transaction,
         private ?self $nested = null
     ) {

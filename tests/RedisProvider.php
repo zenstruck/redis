@@ -18,9 +18,20 @@ trait RedisProvider
 
     public static function redisDsnProvider(): \Traversable
     {
-        yield [$_ENV['REDIS_HOST'], \Redis::class];
+        yield [self::redisDsn(), \Redis::class];
+        yield [self::redisArrayDsn(), \RedisArray::class];
 
-        // todo \RedisArray|\RedisCluster
+        // todo \RedisCluster
+    }
+
+    public static function redisDsn(): string
+    {
+        return 'redis://'.$_ENV['REDIS_HOST1'];
+    }
+
+    public static function redisArrayDsn(): string
+    {
+        return \sprintf('redis:?host[%s]&host[%s]', $_ENV['REDIS_HOST1'], $_ENV['REDIS_HOST2']);
     }
 
     /**

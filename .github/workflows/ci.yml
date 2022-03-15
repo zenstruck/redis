@@ -22,8 +22,6 @@ jobs:
         image: redis:6.0.0
         ports:
           - 16379:6379
-    env:
-      REDIS_HOST: redis://localhost:16379
     steps:
       - uses: zenstruck/.github@php-test-symfony
         with:

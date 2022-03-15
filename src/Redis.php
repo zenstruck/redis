@@ -65,6 +65,21 @@ final class Redis
         return $this->client;
     }
 
+    public function instanceFor(string $key): self
+    {
+        $client = $this->client();
+
+        if ($client instanceof \Redis) {
+            return $this;
+        }
+
+        if ($client instanceof \RedisArray) {
+            return new self($client->_instance($client->_target($key)));
+        }
+
+        throw new \LogicException('todo - RedisCluster...');
+    }
+
     public function sequence(): Sequence
     {
         $client = $this->client();
@@ -73,12 +88,22 @@ final class Redis
             throw new \LogicException('todo...');
         }
 
+        if ($client instanceof \RedisArray) {
+            throw new \LogicException('You must first choose an instance (with "instanceFor()") before creating a sequence.');
+        }
+
         return new Sequence($client->pipeline(), false);
     }
 
     public function transaction(): Sequence
     {
-        return new Sequence($this->client()->multi(), true);
+        $client = $this->client();
+
+        if ($client instanceof \RedisArray) {
+            throw new \LogicException('You must first choose an instance (with "instanceFor()") before creating a transaction.');
+        }
+
+        return new Sequence($client->multi(), true);
     }
 
     public function expiringSet(string $key): ExpiringSet

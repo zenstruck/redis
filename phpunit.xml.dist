@@ -11,7 +11,8 @@
     <php>
         <ini name="error_reporting" value="-1" />
         <env name="SYMFONY_DEPRECATIONS_HELPER" value="max[self]=0&amp;max[direct]=0"/>
-        <env name="REDIS_HOST" value="redis://localhost"/>
+        <env name="REDIS_HOST1" value="localhost"/>
+        <env name="REDIS_HOST2" value="127.0.0.1"/>
     </php>
 
     <testsuites>
