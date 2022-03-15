@@ -57,4 +57,23 @@ final class RedisTest extends TestCase
 
         $this->assertSame(0, $redis->exists('foo'));
     }
+
+    /**
+     * @test
+     * @dataProvider redisDsnProvider
+     */
+    public function can_add_prefix(string $dsn, string $class): void
+    {
+        $redis = Redis::create($dsn, ['prefix' => '_my-prefix:']);
+
+        $redis->set('foo', 'bar');
+
+        $keys = $redis->keys('*');
+
+        if (\RedisArray::class === $class) {
+            $keys = $keys[\array_key_first($keys)];
+        }
+
+        $this->assertSame(['_my-prefix:foo'], $keys);
+    }
 }
