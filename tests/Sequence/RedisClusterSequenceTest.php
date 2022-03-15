@@ -20,16 +20,6 @@ final class RedisClusterSequenceTest extends SequenceTest
         }
     }
 
-    /**
-     * @test
-     */
-    public function sequence(): void
-    {
-        $this->expectException(\LogicException::class);
-
-        parent::sequence();
-    }
-
     protected function createRedis(): Redis
     {
         return Redis::create(self::redisClusterDsn(\getenv('REDIS_CLUSTER_HOSTS')));

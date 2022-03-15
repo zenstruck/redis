@@ -203,6 +203,9 @@ namespace Zenstruck\Redis;
  */
 final class Sequence
 {
+    /** @var list<mixed> */
+    private array $results = [];
+
     /**
      * @internal
      */
@@ -218,7 +221,11 @@ final class Sequence
      */
     public function __call(string $method, array $arguments): self
     {
-        $this->redis->{$method}(...$arguments);
+        $ret = $this->redis->{$method}(...$arguments);
+
+        if ($this->isClusterPipeline()) {
+            $this->results[] = $ret;
+        }
 
         return $this;
     }
@@ -238,11 +245,24 @@ final class Sequence
     public function exec(): array|self
     {
         if ($this->nested) {
-            $this->redis->exec();
+            $ret = $this->redis->exec();
+
+            if ($this->nested->isClusterPipeline()) {
+                $this->nested->results[] = $ret;
+            }
 
             return $this->nested;
         }
 
+        if ($this->isClusterPipeline()) {
+            return $this->results;
+        }
+
         return \is_array($result = $this->redis->exec()) ? $result : [];
+    }
+
+    private function isClusterPipeline(): bool
+    {
+        return !$this->transaction && $this->redis instanceof \RedisCluster;
     }
 }

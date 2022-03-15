@@ -65,13 +65,16 @@ final class Redis
         return $this->client;
     }
 
+    /**
+     * Create a command pipeline. Uses {@see \Redis::pipeline()} if
+     * applicable. For \RedisCluser, the API is the same but commands
+     * are executed atomically.
+     *
+     * @param string|null $key Required if RedisArray, ignored otherwise
+     */
     public function sequence(?string $key = null): Sequence
     {
         $client = $this->client();
-
-        if ($client instanceof \RedisCluster) {
-            throw new \LogicException('Sequence (pipeline) not available for RedisCluster.');
-        }
 
         if ($client instanceof \RedisArray) {
             if (null === $key) {
@@ -81,9 +84,18 @@ final class Redis
             $client = $client->_instance($client->_target($key));
         }
 
-        return new Sequence($client->pipeline(), false);
+        if ($client instanceof \Redis) {
+            $client = $client->pipeline();
+        }
+
+        return new Sequence($client, false);
     }
 
+    /**
+     * Create a command transaction (using {@see \Redis::multi()}).
+     *
+     * @param string|null $key Required if RedisArray, ignored otherwise
+     */
     public function transaction(?string $key = null): Sequence
     {
         $client = $this->client();
