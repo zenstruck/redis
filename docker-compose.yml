@@ -16,3 +16,11 @@ services:
       - 7006:7006
     environment:
       - STANDALONE=1
+  redis-sentinel:
+    image: bitnami/redis-sentinel:6.0
+    ports:
+      - 26379:26379
+    environment:
+      - REDIS_MASTER_HOST=redis
+      - REDIS_MASTER_SET=redis_sentinel
+      - REDIS_SENTINEL_QUORUM=1
