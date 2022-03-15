@@ -65,14 +65,20 @@ final class Redis
         return $this->client;
     }
 
-    public function pipeline(): Sequence
+    public function sequence(): Sequence
     {
-        return $this->multi(\Redis::PIPELINE);
+        $client = $this->client();
+
+        if ($client instanceof \RedisCluster) {
+            throw new \LogicException('todo...');
+        }
+
+        return new Sequence($client->pipeline(), false);
     }
 
-    public function multi(int $mode = \Redis::MULTI): Sequence
+    public function transaction(): Sequence
     {
-        return new Sequence($this->client()->multi($mode), \Redis::MULTI === $mode);
+        return new Sequence($this->client()->multi(), true);
     }
 
     public function expiringSet(string $key): ExpiringSet

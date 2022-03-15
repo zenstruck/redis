@@ -16,7 +16,7 @@ final class SequenceTest extends TestCase
      * @test
      * @dataProvider redisProvider
      */
-    public function pipeline(Redis $redis): void
+    public function sequence(Redis $redis): void
     {
         $this->assertSame(
             [
@@ -26,7 +26,7 @@ final class SequenceTest extends TestCase
                 ['43', 1],
                 true,
             ],
-            $redis->pipeline()
+            $redis->sequence()
                 ->ping()
                 ->multi()
                     ->set('x', '42')
@@ -41,14 +41,14 @@ final class SequenceTest extends TestCase
                 ->exec()
         );
 
-        $this->assertSame([], $redis->pipeline()->exec());
+        $this->assertSame([], $redis->sequence()->exec());
     }
 
     /**
      * @test
      * @dataProvider redisProvider
      */
-    public function multi(Redis $redis): void
+    public function transaction(Redis $redis): void
     {
         $this->assertSame(
             [
@@ -60,7 +60,7 @@ final class SequenceTest extends TestCase
                 1,
                 true,
             ],
-            $redis->multi()
+            $redis->transaction()
                 ->ping()
                 ->set('x', '42')
                 ->incr('x')
@@ -71,16 +71,16 @@ final class SequenceTest extends TestCase
                 ->exec()
         );
 
-        $this->assertSame([], $redis->multi()->exec());
+        $this->assertSame([], $redis->transaction()->exec());
     }
 
     /**
      * @test
      * @dataProvider redisProvider
      */
-    public function cannot_call_multi_within_multi(Redis $redis): void
+    public function cannot_call_multi_within_transaction(Redis $redis): void
     {
-        $sequence = $redis->multi();
+        $sequence = $redis->transaction();
 
         $this->expectException(\LogicException::class);
 
