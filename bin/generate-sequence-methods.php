@@ -31,6 +31,10 @@ foreach ((new \ReflectionClass(RedisStub::class))->getMethods(\ReflectionMethod:
         function(ReflectionParameter $p) {
             $param = '$'.$p->name;
 
+            if ($type = $p->getType()) {
+                $param = \sprintf('%s %s', $type, $param);
+            }
+
             if ($p->isVariadic()) {
                 $param = '...'.$param;
             }
