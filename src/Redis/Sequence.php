@@ -2,6 +2,8 @@
 
 namespace Zenstruck\Redis;
 
+use Zenstruck\Redis;
+
 /**
  * @author Kevin Bond <kevinbond@gmail.com>
  *
@@ -203,6 +205,8 @@ namespace Zenstruck\Redis;
  */
 final class Sequence
 {
+    private const KEY_COMMANDS = ['GET', 'SET', 'SETEX', 'PSETEX', 'SETNX', 'WATCH', 'EXISTS', 'INCR', 'INCRBYFLOAT', 'INCRBY', 'DECR', 'DECRBY', 'LPUSH', 'RPUSH', 'LPUSHX', 'RPUSHX', 'LPOP', 'RPOP', 'LLEN', 'LSIZE', 'LINDEX', 'LGET', 'LSET', 'LRANGE', 'LGETRANGE', 'LTRIM', 'LISTTRIM', 'LREM', 'LREMOVE', 'LINSERT', 'SADD', 'SREM', 'SREMOVE', 'SISMEMBER', 'SCONTAINS', 'SCARD', 'SPOP', 'SRANDMEMBER', 'SMEMBERS', 'SGETMEMBERS', 'SSCAN', 'GETSET', 'MOVE', 'EXPIRE', 'PEXPIRE', 'SETTIMEOUT', 'EXPIREAT', 'PEXPIREAT', 'TYPE', 'APPEND', 'GETRANGE', 'SUBSTR', 'SETRANGE', 'STRLEN', 'BITPOS', 'GETBIT', 'SETBIT', 'BITCOUNT', 'SORT', 'TTL', 'PTTL', 'PERSIST', 'ZADD', 'ZRANGE', 'ZREM', 'ZDELETE', 'ZREVRANGE', 'ZRANGEBYSCORE', 'ZREVRANGEBYSCORE', 'ZRANGEBYLEX', 'ZREVRANGEBYLEX', 'ZCOUNT', 'ZREMRANGEBYSCORE', 'ZDELETERANGEBYSCORE', 'ZREMRANGEBYRANK', 'ZDELETERANGEBYRANK', 'ZCARD', 'ZSIZE', 'ZSCORE', 'ZRANK', 'ZREVRANK', 'ZINCRBY', 'ZSCAN', 'ZPOPMAX', 'ZPOPMIN', 'HSET', 'HSETNX', 'HGET', 'HLEN', 'HDEL', 'HKEYS', 'HVALS', 'HGETALL', 'HEXISTS', 'HINCRBY', 'HINCRBYFLOAT', 'HMSET', 'HMGET', 'HSCAN', 'HSTRLEN', 'GEOADD', 'GEOHASH', 'GEOPOS', 'GEODIST', 'GEORADIUS', 'GEORADIUSBYMEMBER', 'DUMP', 'RESTORE', 'PFADD', 'PFCOUNT', 'XADD', 'XCLAIM', 'XDEL', 'SADDARRAY'];
+
     /** @var list<mixed> */
     private array $results = [];
 
@@ -212,7 +216,7 @@ final class Sequence
     /**
      * @internal
      */
-    public function __construct(private \Redis|\RedisCluster $redis, private bool $transaction)
+    public function __construct(private \Redis|\RedisCluster|Redis $redis, private bool $transaction)
     {
     }
 
@@ -221,6 +225,26 @@ final class Sequence
      */
     public function __call(string $method, array $arguments): self
     {
+        if ($this->redis instanceof Redis) {
+            $client = $this->redis->client();
+
+            if ($client instanceof \RedisArray) {
+                if (!\in_array(\mb_strtoupper($method), self::KEY_COMMANDS, true)) {
+                    throw new \LogicException('When using sequence/transaction with \RedisArray, the first command must use a redis key.');
+                }
+
+                $client = $client->_instance($client->_target($arguments[0] ?? 'invalid'));
+            }
+
+            if ($this->transaction) {
+                $client = $client->multi();
+            } elseif ($client instanceof \Redis) {
+                $client = $client->pipeline();
+            }
+
+            $this->redis = $client;
+        }
+
         $ret = $this->redis->{$method}(...$arguments);
 
         if ($this->isClusterPipeline()) {
@@ -258,7 +282,7 @@ final class Sequence
      */
     public function execute(): array
     {
-        return \array_combine(
+        return !$this->map ? [] : \array_combine(
             \array_keys($this->map),
             $this->isClusterPipeline() ? $this->results : (\is_array($result = $this->redis->exec()) ? $result : [])
         );

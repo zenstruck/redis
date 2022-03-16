@@ -89,49 +89,29 @@ final class Redis implements \Countable, \IteratorAggregate
 
     /**
      * Create a command sequence/pipeline with a unified API. Uses
-     * {@see \Redis::pipeline()} if applicable. For {@see \RedisCluster},
-     * the API is the same but commands are executed atomically.
+     * {@see \Redis::pipeline()} if applicable.
      *
-     * @param string|null $key Required if RedisArray, ignored otherwise
+     * For {@see \RedisArray}, the first command must be a "key command"
+     * in order to get the correct host - {@see Sequence::KEY_COMMANDS}.
+     *
+     * For {@see \RedisCluster}, the API is the same but commands are
+     * executed atomically.
      */
-    public function sequence(?string $key = null): Sequence
+    public function sequence(): Sequence
     {
-        $client = $this->client();
-
-        if ($client instanceof \RedisArray) {
-            if (null === $key) {
-                throw new \LogicException(\sprintf('When using a RedisArray, a key must be passed to %s() to choose an instance.', __METHOD__));
-            }
-
-            $client = $client->_instance($client->_target($key));
-        }
-
-        if ($client instanceof \Redis) {
-            $client = $client->pipeline();
-        }
-
-        return new Sequence($client, false);
+        return new Sequence($this, false);
     }
 
     /**
      * Create a command transaction with a unified API using
      * {@see \Redis::multi()}.
      *
-     * @param string|null $key Required if RedisArray, ignored otherwise
+     * For {@see \RedisArray}, the first command must be a "key command"
+     * in order to get the correct host - {@see Sequence::KEY_COMMANDS}.
      */
-    public function transaction(?string $key = null): Sequence
+    public function transaction(): Sequence
     {
-        $client = $this->client();
-
-        if ($client instanceof \RedisArray) {
-            if (null === $key) {
-                throw new \LogicException(\sprintf('When using a RedisArray, a key must be passed to %s() to choose an instance.', __METHOD__));
-            }
-
-            $client = $client->_instance($client->_target($key));
-        }
-
-        return new Sequence($client->multi(), true);
+        return new Sequence($this, true);
     }
 
     /**

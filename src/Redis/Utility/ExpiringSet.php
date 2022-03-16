@@ -31,7 +31,7 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
 
         $time = \microtime(true);
 
-        $result = $this->client->transaction($this->key)
+        $result = $this->client->transaction()
             ->zRemRangeByScore($this->key, 0, $time)
             ->zAdd($this->key, $time + $ttl, $value)
             ->zRangeByScore($this->key, $time, '+inf')->as('list')
@@ -45,7 +45,7 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
 
     public function remove(mixed $value): self
     {
-        $result = $this->client->transaction($this->key)
+        $result = $this->client->transaction()
             ->zRemRangeByScore($this->key, 0, $time = \microtime(true))
             ->zRem($this->key, $value)
             ->zRangeByScore($this->key, $time, '+inf')->as('list')
@@ -73,7 +73,7 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
 
         $time = \microtime(true);
 
-        $result = $this->client->transaction($this->key)
+        $result = $this->client->transaction()
             ->zRemRangeByScore($this->key, 0, $time)
             ->zRangeByScore($this->key, $time, '+inf')->as('list')
             ->execute()

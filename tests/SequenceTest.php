@@ -25,7 +25,7 @@ abstract class SequenceTest extends TestCase
                 '44',
                 1,
             ],
-            $this->createRedis()->sequence($this->transactionKey())
+            $this->createRedis()->sequence()
                 ->set('x', '42')
                 ->incr('x')
                 ->incr('x')
@@ -34,7 +34,7 @@ abstract class SequenceTest extends TestCase
                 ->execute()
         );
 
-        $this->assertSame([], $this->createRedis()->sequence($this->transactionKey())->execute());
+        $this->assertSame([], $this->createRedis()->sequence()->execute());
     }
 
     /**
@@ -50,7 +50,7 @@ abstract class SequenceTest extends TestCase
                 'alias3' => '44',
                 4 => 1,
             ],
-            $this->createRedis()->sequence($this->transactionKey())
+            $this->createRedis()->sequence()
                 ->set('x', '42')
                 ->incr('x')->as('alias1')
                 ->incr('x')->as('alias2')
@@ -59,7 +59,7 @@ abstract class SequenceTest extends TestCase
                 ->execute()
         );
 
-        $this->assertSame([], $this->createRedis()->sequence($this->transactionKey())->execute());
+        $this->assertSame([], $this->createRedis()->sequence()->execute());
     }
 
     /**
@@ -74,7 +74,7 @@ abstract class SequenceTest extends TestCase
                 '43',
                 1,
             ],
-            $this->createRedis()->transaction($this->transactionKey())
+            $this->createRedis()->transaction()
                 ->set('x', '42')
                 ->incr('x')
                 ->get('x')
@@ -82,7 +82,7 @@ abstract class SequenceTest extends TestCase
                 ->execute()
         );
 
-        $this->assertSame([], $this->createRedis()->transaction($this->transactionKey())->execute());
+        $this->assertSame([], $this->createRedis()->transaction()->execute());
     }
 
     /**
@@ -97,7 +97,7 @@ abstract class SequenceTest extends TestCase
                 2 => '43',
                 'alias2' => 1,
             ],
-            $this->createRedis()->transaction($this->transactionKey())
+            $this->createRedis()->transaction()
                 ->set('x', '42')
                 ->incr('x')->as('alias1')
                 ->get('x')
@@ -105,7 +105,7 @@ abstract class SequenceTest extends TestCase
                 ->execute()
         );
 
-        $this->assertSame([], $this->createRedis()->transaction($this->transactionKey())->execute());
+        $this->assertSame([], $this->createRedis()->transaction()->execute());
     }
 
     /**
@@ -113,16 +113,11 @@ abstract class SequenceTest extends TestCase
      */
     public function cannot_alias_if_no_command_run(): void
     {
-        $sequence = $this->createRedis()->sequence($this->transactionKey());
+        $sequence = $this->createRedis()->sequence();
 
         $this->expectException(\LogicException::class);
 
         $sequence->as('alias');
-    }
-
-    protected function transactionKey(): ?string
-    {
-        return null;
     }
 
     abstract protected function createRedis(): Redis;

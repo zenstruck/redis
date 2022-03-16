@@ -108,7 +108,7 @@ The proxy has a fluent, auto-completable API for Redis pipelines and transaction
 ```php
 /** @var Zenstruck\Redis $proxy */
 
-// use \Redis|\RedisArray|\RedisCluster::multi()
+// use \Redis::multi()
 $results = $proxy->transaction()
     ->set('x', '42')
     ->incr('x')
@@ -120,7 +120,7 @@ $results = $proxy->transaction()
 $results['value']; // "43" (result of ->get())
 $results[3]; // true (result of ->del())
 
-// use \Redis|\RedisArray::pipeline() - see note below about \RedisCluster
+// use \Redis::pipeline() - see note below about \RedisCluster
 $proxy->sequence()
     ->set('x', '42')
     ->incr('x')
@@ -136,26 +136,9 @@ $results[3]; // true (result of ->del())
 **NOTE:** When using `sequence()` with `\RedisCluster`, the commands are executed
 atomically as pipelines are not supported.
 
-**NOTE:** When using `sequence()`/`transaction()` with a `\RedisArray` instance, a
-key must be passed to the method (so `\RedisArray` knows which host to run on).
-If there is the possibility \RedisArray could be used in the future, it's
-recommended to always pass the key (it's ignored if not using `\RedisArray`):
-
-```php
-/** @var Zenstruck\Redis $proxy */
-
-$results = $proxy->sequence('x') // pass key
-    ->set('x', '42')
-    ->incr('x')
-    // ...
-;
-
-$results = $proxy->transaction('x') // pass key
-    ->set('x', '42')
-    ->incr('x')
-    // ...
-;
-```
+**NOTE:** When using `sequence()`/`transaction()` with a `\RedisArray` instance, the
+first command in the sequence/transaction must be a "key-based command"
+(ie `get()`/`set()`). This is to choose the node the transaction is run on.
 
 ## Utilities
 

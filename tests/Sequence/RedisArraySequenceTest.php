@@ -13,30 +13,25 @@ final class RedisArraySequenceTest extends SequenceTest
     /**
      * @test
      */
-    public function cannot_create_sequence_without_instance_key(): void
+    public function sequence_first_command_must_use_a_key(): void
     {
-        $redis = Redis::create(self::redisArrayDsn());
+        $sequence = $this->createRedis()->sequence();
 
         $this->expectException(\LogicException::class);
 
-        $redis->sequence();
+        $sequence->keys('*');
     }
 
     /**
      * @test
      */
-    public function cannot_create_transaction_without_instance_key(): void
+    public function transaction_first_command_must_use_a_key(): void
     {
-        $redis = Redis::create(self::redisArrayDsn());
+        $transaction = $this->createRedis()->sequence();
 
         $this->expectException(\LogicException::class);
 
-        $redis->transaction();
-    }
-
-    protected function transactionKey(): ?string
-    {
-        return 'foo';
+        $transaction->keys('*');
     }
 
     protected function createRedis(): Redis
