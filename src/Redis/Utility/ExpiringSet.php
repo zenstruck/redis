@@ -29,26 +29,28 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
 
         $time = \microtime(true);
 
-        $this->client->transaction($this->key)
+        $result = $this->client->transaction($this->key)
             ->zRemRangeByScore($this->key, 0, $time)
             ->zAdd($this->key, $time + $ttl, $value)
+            ->zRangeByScore($this->key, $time, '+inf')
             ->exec()
         ;
 
-        unset($this->cachedList);
+        $this->cachedList = $result[2];
 
         return $this;
     }
 
     public function remove(mixed $value): self
     {
-        $this->client->transaction($this->key)
-            ->zRemRangeByScore($this->key, 0, \microtime(true))
+        $result = $this->client->transaction($this->key)
+            ->zRemRangeByScore($this->key, 0, $time = \microtime(true))
             ->zRem($this->key, $value)
+            ->zRangeByScore($this->key, $time, '+inf')
             ->exec()
         ;
 
-        unset($this->cachedList);
+        $this->cachedList = $result[2];
 
         return $this;
     }
@@ -90,8 +92,7 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
     public function clear(): self
     {
         $this->client->del($this->key);
-
-        unset($this->cachedList);
+        $this->cachedList = [];
 
         return $this;
     }
