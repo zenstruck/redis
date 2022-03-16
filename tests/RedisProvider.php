@@ -56,18 +56,9 @@ trait RedisProvider
     public static function resetRedis(): void
     {
         foreach (self::redisProvider() as [$client]) {
-            // todo encapsulate
-            $client = $client->client();
-
-            if ($client instanceof \RedisCluster) {
-                foreach ($client->_masters() as $node) {
-                    $client->flushAll($node);
-                }
-
-                continue;
+            foreach ($client as $node) {
+                $node->flushAll();
             }
-
-            $client->flushAll();
         }
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Zenstruck;
 
+use Traversable;
 use Zenstruck\Redis\DsnFactory;
 use Zenstruck\Redis\Sequence;
 use Zenstruck\Redis\Utility\ExpiringSet;
@@ -10,15 +11,20 @@ use Zenstruck\Redis\Utility\ExpiringSet;
  * @author Kevin Bond <kevinbond@gmail.com>
  *
  * @mixin \Redis
+ *
+ * @implements \IteratorAggregate<int,Redis>
  */
-final class Redis implements \Countable
+final class Redis implements \Countable, \IteratorAggregate
 {
+    private const CLUSTER_NODE_METHODS = ['SAVE', 'BGSAVE', 'FLUSHDB', 'FLUSHALL', 'DBSIZE', 'BGREWRITEAOF', 'LASTSAVE', 'INFO', 'CLIENT', 'CLUSTER', 'CONFIG', 'PUBSUB', 'SLOWLOG', 'RANDOMKEY', 'PING', 'SCAN'];
+
     private \Closure|\Redis|\RedisArray|\RedisCluster $client;
 
     /**
      * @param \Redis|\RedisArray|\RedisCluster|callable():(\Redis|\RedisArray|\RedisCluster) $client
+     * @param list<mixed>|null $node
      */
-    private function __construct(callable|\Redis|\RedisArray|\RedisCluster $client)
+    private function __construct(callable|\Redis|\RedisArray|\RedisCluster $client, private ?array $node = null)
     {
         $this->client = \is_callable($client) ? \Closure::fromCallable($client) : $client;
     }
@@ -28,7 +34,13 @@ final class Redis implements \Countable
      */
     public function __call(string $method, array $arguments): mixed
     {
-        return $this->client()->{$method}(...$arguments);
+        $client = $this->client();
+
+        if ($client instanceof \RedisCluster && $this->node && \in_array(\mb_strtoupper($method), self::CLUSTER_NODE_METHODS, true)) {
+            $arguments = [$this->node, ...$arguments];
+        }
+
+        return $client->{$method}(...$arguments);
     }
 
     public static function wrap(self|\Redis|\RedisArray|\RedisCluster $client): self
@@ -125,5 +137,28 @@ final class Redis implements \Countable
             \RedisCluster::class => \count($client->_masters()),
             default => 1,
         };
+    }
+
+    public function getIterator(): Traversable
+    {
+        $client = $this->client();
+
+        if ($client instanceof \Redis) {
+            yield $this;
+
+            return;
+        }
+
+        if ($client instanceof \RedisArray) {
+            foreach ($client->_hosts() as $host) {
+                yield new self($client->_instance($host));
+            }
+
+            return;
+        }
+
+        foreach ($client->_masters() as $node) {
+            yield new self($client, $node);
+        }
     }
 }

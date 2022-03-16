@@ -91,4 +91,25 @@ final class RedisTest extends TestCase
 
         $this->assertCount($expectedCount, $redis);
     }
+
+    /**
+     * @test
+     * @dataProvider redisProvider
+     */
+    public function is_iterable(Redis $redis, string $class): void
+    {
+        $expectedCount = match ($class) {
+            \RedisArray::class => \count($redis->_hosts()),
+            \RedisCluster::class => \count($redis->_masters()),
+            default => 1,
+        };
+
+        $results = [];
+
+        foreach ($redis as $node) {
+            $results[] = $node->ping();
+        }
+
+        $this->assertSame(\array_fill(0, $expectedCount, true), $results);
+    }
 }
