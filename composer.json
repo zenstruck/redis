@@ -1,6 +1,6 @@
 {
     "name": "zenstruck/redis",
-    "description": "Lazy proxy for php-redis with DX helpers and utilities.",
+    "description": "Lazy proxy for php-redis with DX helpers, utilities and a unified API.",
     "homepage": "https://github.com/zenstruck/redis",
     "type": "library",
     "license": "MIT",

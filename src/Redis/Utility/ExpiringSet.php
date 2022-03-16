@@ -5,6 +5,8 @@ namespace Zenstruck\Redis\Utility;
 use Zenstruck\Redis;
 
 /**
+ * An encapsulated Redis set whose members expire.
+ *
  * @author Kevin Bond <kevinbond@gmail.com>
  *
  * @implements \IteratorAggregate<int,mixed>
@@ -61,7 +63,7 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
     }
 
     /**
-     * @return array<mixed>
+     * @return list<mixed>
      */
     public function all(): array
     {

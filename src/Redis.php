@@ -2,7 +2,6 @@
 
 namespace Zenstruck;
 
-use Traversable;
 use Zenstruck\Redis\DsnFactory;
 use Zenstruck\Redis\Sequence;
 use Zenstruck\Redis\Utility\ExpiringSet;
@@ -43,6 +42,9 @@ final class Redis implements \Countable, \IteratorAggregate
         return $client->{$method}(...$arguments);
     }
 
+    /**
+     * Create an instance from an existing PhpRedis instance.
+     */
     public static function wrap(self|\Redis|\RedisArray|\RedisCluster $client): self
     {
         if ($client instanceof self) {
@@ -53,7 +55,10 @@ final class Redis implements \Countable, \IteratorAggregate
     }
 
     /**
-     * @param array<string,mixed> $options
+     * Create a "lazy" instance from a DSN. The connection is not made
+     * until the first command is called.
+     *
+     * @param array<string,mixed> $options {@see DsnFactory::DEFAULT_OPTIONS}
      */
     public static function create(string $dsn, array $options = []): self
     {
@@ -61,13 +66,18 @@ final class Redis implements \Countable, \IteratorAggregate
     }
 
     /**
-     * @param array<string,mixed> $options
+     * Create a PhpRedis client instance from a DSN.
+     *
+     * @param array<string,mixed> $options {@see DsnFactory::DEFAULT_OPTIONS}
      */
     public static function createClient(string $dsn, array $options = []): \Redis|\RedisArray|\RedisCluster
     {
         return self::create($dsn, $options)->client();
     }
 
+    /**
+     * Fetch the "real" proxied PhpRedis client.
+     */
     public function client(): \Redis|\RedisArray|\RedisCluster
     {
         if ($this->client instanceof \Closure) {
@@ -78,9 +88,9 @@ final class Redis implements \Countable, \IteratorAggregate
     }
 
     /**
-     * Create a command pipeline. Uses {@see \Redis::pipeline()} if
-     * applicable. For \RedisCluser, the API is the same but commands
-     * are executed atomically.
+     * Create a command sequence/pipeline with a unified API. Uses
+     * {@see \Redis::pipeline()} if applicable. For {@see \RedisCluster},
+     * the API is the same but commands are executed atomically.
      *
      * @param string|null $key Required if RedisArray, ignored otherwise
      */
@@ -104,7 +114,8 @@ final class Redis implements \Countable, \IteratorAggregate
     }
 
     /**
-     * Create a command transaction (using {@see \Redis::multi()}).
+     * Create a command transaction with a unified API using
+     * {@see \Redis::multi()}.
      *
      * @param string|null $key Required if RedisArray, ignored otherwise
      */
@@ -123,11 +134,21 @@ final class Redis implements \Countable, \IteratorAggregate
         return new Sequence($client->multi(), true);
     }
 
+    /**
+     * Create a new {@see ExpiringSet}.
+     */
     public function expiringSet(string $key): ExpiringSet
     {
         return new ExpiringSet($key, $this);
     }
 
+    /**
+     * Count the number of underlying clients.
+     *
+     * @see \Redis        is always 1
+     * @see \RedisArray   is the number of hosts
+     * @see \RedisCluster is the number of "masters"
+     */
     public function count(): int
     {
         $client = $this->client();
@@ -139,7 +160,16 @@ final class Redis implements \Countable, \IteratorAggregate
         };
     }
 
-    public function getIterator(): Traversable
+    /**
+     * Iterate over the underlying clients.
+     *
+     * @see \Redis        iterates over a single instance
+     * @see \RedisArray   iterates over the hosts (proxied)
+     * @see \RedisCluster iterates over the "masters" and removes the
+     *                    need to pass "node parameters" to certain
+     *                    commands {@see CLUSTER_NODE_METHODS}
+     */
+    public function getIterator(): \Traversable
     {
         $client = $this->client();
 

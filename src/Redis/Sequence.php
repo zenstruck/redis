@@ -235,6 +235,10 @@ final class Sequence
         return $this;
     }
 
+    /**
+     * Create an alias for the last command's result. This will be the
+     * key for this result in the array returned from {@see execute()}.
+     */
     public function as(string $alias): self
     {
         if (!$this->map) {

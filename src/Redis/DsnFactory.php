@@ -3,8 +3,12 @@
 namespace Zenstruck\Redis;
 
 /**
- * @author Kevin Bond <kevinbond@gmail.com>
+ * @copyright Fabien Potencier <fabien@symfony.com>
+ * @source https://github.com/symfony/symfony/blob/8e8207bb72d7f2cb8be355994ad2fcfa97c00f74/src/Symfony/Component/Cache/Traits/RedisTrait.php
+ *
+ * @author Aurimas Niekis <aurimas@niekis.lt>
  * @author Nicolas Grekas <p@tchwork.com>
+ * @author Kevin Bond <kevinbond@gmail.com>
  *
  * @internal
  */
