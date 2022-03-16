@@ -20,21 +20,25 @@ composer require zenstruck/redis
 
 ## Create Proxy
 
-Creating a proxy is done via a _DSN_ string. Here are some examples:
+Creating a proxy is done via a _DSN_ string. The DSN must use the following format:
+
+```
+redis[s]://[pass@][ip|host|socket[:port]][/db-index][?prefix={prefix}]
+```
+
+Here are some examples:
 
 ```php
 use Zenstruck\Redis;
 
 $proxy = Redis::create('redis://localhost'); // Zenstruck\Redis<\Redis>
-
+$proxy = Redis::create('redis://localhost?prefix=myapp:'); // Zenstruck\Redis<\Redis> (with all keys prefixed with "myapp:")
 $proxy = Redis::create('redis://localhost?redis_sentinel=sentinel_service'); // Zenstruck\Redis<\Redis> (using Redis Sentinel)
 
 $proxy = Redis::create('redis:?host[host1]&host[host2]'); // Zenstruck\Redis<\RedisArray>
 
 $proxy = Redis::create('redis:?host[host1]&host[host2]&redis_cluster=1'); // Zenstruck\Redis<\RedisCluster>
 ```
-
-**NOTE:** Add `?prefix={my-prefix}` to the DSN to prefix all keys.
 
 You can also create a Proxy from an exising instance of `\Redis|\RedisArray|\RedisCluster`:
 
@@ -144,9 +148,165 @@ first command in the sequence/transaction must be a "key-based command"
 
 ### ExpiringSet
 
+`Zenstruck\Redis\Utility\ExpiringSet` encapsulates the concept of a _Redis expiring
+set_: a set (unordered list with no duplicates) whose members expire after a time.
+Each read/write operation on the set _prunes_ expired members.
+
+```php
+/** @var Zenstruck\Redis $client */
+
+$set = $client->expiringSet('my-set'); // redis key to store the set
+
+$set->add('member1', 600); // set add "member1" that expires in 10 minutes
+$set->add('member1', new \DateInterval::createFromDateString('5 minutes')); // can use \DateInterval for the TTL
+$set->add('member1', new \DateTime('+5 minutes')); // use \DateTimeInterface to set specific expiry timestamp
+
+$set->remove('member1'); // explicitly remove a member
+
+$set->all(); // array - all unexpired members
+
+$set->contains('member'); // true/false
+
+$set->clear(); // clear all items
+
+$set->prune(); // explicitly "prune" the set (remove expired members)
+
+count($set); // int - number of unexpired members
+
+foreach ($set as $member) {
+    // iterate over unexpired members
+}
+
+// fluent
+$set
+    ->add('member1', 600)
+    ->add('member2', 600)
+    ->remove('member1')
+    ->remove('member2')
+    ->prune()
+    ->clear()
+;
+```
+
+Below is a pseudocode example using this object for tracking active users on a
+website. When authenticated users login or request a page, their username is added
+to the set with a 5-minute idle time-to-live (TTL). A user is considered _active_
+within this time. On logout, they are removed from the set. If a user has not made
+a request within their last TTL, they are removed from the set.
+
+```php
+/** @var Zenstruck\Redis $client */
+
+$set = $client->expiringSet('active-users');
+$ttl = \DateInterval::createFromDateString('5 minutes');
+
+// LOGIN EVENT:
+$set->add($event->getUsername(), $ttl);
+
+// LOGOUT EVENT:
+$set->remove($event->getUsername());
+
+// REQUEST EVENT:
+$set->add($event->getUsername(), $ttl);
+
+// ADMIN MONITORING DASHBOARD WIDGET
+$activeUserCount = count($set);
+$activeUsernames = $set->all(); // [user1, user2, ...]
+
+// ADMIN USER CRUD LISTING
+foreach ($users as $user) {
+    $isActive = $set->contains($user->getUsername()); // bool
+    // ...
+}
+```
+
 ## Integrations
 
 ### Symfony Framework
+
+Add a supported Redis [DSN](#create-proxy) environment variable:
+
+```bash
+# .env
+
+REDIS_DSN=redis://localhost
+```
+
+Configure services:
+
+```yaml
+# config/packages/zenstruck_redis.yaml
+
+services:
+
+    # Proxy that is autowireable
+    Zenstruck\Redis:
+        factory: ['Zenstruck\Redis', 'create']
+        arguments: ['%env(REDIS_DSN)%']
+
+    # Separate proxy's that have different prefixes
+    redis1:
+        class: Zenstruck\Redis
+        factory: ['Zenstruck\Redis', 'create']
+        arguments: ['%env(REDIS_DSN)%', { prefix: 'prefix1:' }]
+    redis2:
+        class: Zenstruck\Redis
+        factory: ['Zenstruck\Redis', 'create']
+        arguments: ['%env(REDIS_DSN)%', { prefix: 'prefix2:' }]
+
+    # expiring set service
+    active_users:
+        class: Zenstruck\Redis\Utility\ExpiringSet
+        factory: ['@Zenstruck\Redis', 'expiringSet']
+        arguments:
+            - active_users # redis key
+
+    # Specific clients that are autowireable
+    Redis:
+        class: Redis
+        factory: ['Zenstruck\Redis', 'createClient']
+        arguments: ['%env(REDIS_DSN)%'] # note REDIS_DSN must be for \Redis client
+
+    RedisArray:
+        class: RedisArray
+        factory: ['Zenstruck\Redis', 'createClient']
+        arguments: ['%env(REDIS_DSN)%'] # note REDIS_DSN must be for \RedisArray client
+
+    RedisCluster:
+        class: RedisCluster
+        factory: ['Zenstruck\Redis', 'createClient']
+        arguments: ['%env(REDIS_DSN)%'] # note REDIS_DSN must be for \RedisCluster client
+```
+
+Use `Zenstruck\Redis` for session storage (see [Symfony Docs](https://symfony.com/doc/current/session/database.html#store-sessions-in-a-key-value-database-redis)
+for more details/options):
+
+```yaml
+# config/services.yaml
+
+# Assumes "Zenstruck\Redis" is available as a service and symfony/expression-language is installed
+services:
+    redis_session_handler:
+        class:  Symfony\Component\HttpFoundation\Session\Storage\Handler\RedisSessionHandler
+        arguments:
+            - "@=service('Zenstruck\\\\Redis').realClient()"
+
+# config/packages/framework.yaml
+framework:
+    # ...
+    session:
+        handler_id: Symfony\Component\HttpFoundation\Session\Storage\Handler\RedisSessionHandler
+```
+
+## Contributing
+
+Running the test suite:
+
+```bash
+composer install
+docker compose up -d # setup redis, redis-cluster, redis-sentinel
+vendor/bin/phpunit -c phpunit.docker.xml
+```
 
 ## Credit
 
