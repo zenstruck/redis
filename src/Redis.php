@@ -11,7 +11,7 @@ use Zenstruck\Redis\Utility\ExpiringSet;
  *
  * @mixin \Redis
  */
-final class Redis
+final class Redis implements \Countable
 {
     private \Closure|\Redis|\RedisArray|\RedisCluster $client;
 
@@ -114,5 +114,16 @@ final class Redis
     public function expiringSet(string $key): ExpiringSet
     {
         return new ExpiringSet($key, $this);
+    }
+
+    public function count(): int
+    {
+        $client = $this->client();
+
+        return match ($client::class) {
+            \RedisArray::class => \count($client->_hosts()),
+            \RedisCluster::class => \count($client->_masters()),
+            default => 1,
+        };
     }
 }

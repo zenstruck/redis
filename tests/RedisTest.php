@@ -76,4 +76,19 @@ final class RedisTest extends TestCase
 
         $this->assertSame(['_my-prefix:foo'], $keys);
     }
+
+    /**
+     * @test
+     * @dataProvider redisProvider
+     */
+    public function is_countable(Redis $redis, string $class): void
+    {
+        $expectedCount = match ($class) {
+            \RedisArray::class => \count($redis->_hosts()),
+            \RedisCluster::class => \count($redis->_masters()),
+            default => 1,
+        };
+
+        $this->assertCount($expectedCount, $redis);
+    }
 }
