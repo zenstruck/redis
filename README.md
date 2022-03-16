@@ -71,8 +71,8 @@ $client = Redis::createClient('redis:?host[host1]&host[host2]&redis_cluster=1');
 $proxy->set('mykey', 'value');
 $proxy->get('mykey'); // "value"
 
-// get the underlying client
-$proxy->client(); // \Redis|\RedisArray|\RedisCluster
+// get the "real" client
+$proxy->realClient(); // \Redis|\RedisArray|\RedisCluster
 ```
 
 ### Countable\Iterable

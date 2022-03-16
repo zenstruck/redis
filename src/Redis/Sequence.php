@@ -226,7 +226,7 @@ final class Sequence
     public function __call(string $method, array $arguments): self
     {
         if ($this->redis instanceof Redis) {
-            $client = $this->redis->client();
+            $client = $this->redis->realClient();
 
             if ($client instanceof \RedisArray) {
                 if (!\in_array(\mb_strtoupper($method), self::KEY_COMMANDS, true)) {

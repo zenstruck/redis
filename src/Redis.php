@@ -33,7 +33,7 @@ final class Redis implements \Countable, \IteratorAggregate
      */
     public function __call(string $method, array $arguments): mixed
     {
-        $client = $this->client();
+        $client = $this->realClient();
 
         if ($client instanceof \RedisCluster && $this->node && \in_array(\mb_strtoupper($method), self::CLUSTER_NODE_METHODS, true)) {
             $arguments = [$this->node, ...$arguments];
@@ -72,13 +72,13 @@ final class Redis implements \Countable, \IteratorAggregate
      */
     public static function createClient(string $dsn, array $options = []): \Redis|\RedisArray|\RedisCluster
     {
-        return self::create($dsn, $options)->client();
+        return self::create($dsn, $options)->realClient();
     }
 
     /**
-     * Fetch the "real" proxied PhpRedis client.
+     * Get the "real" PhpRedis client.
      */
-    public function client(): \Redis|\RedisArray|\RedisCluster
+    public function realClient(): \Redis|\RedisArray|\RedisCluster
     {
         if ($this->client instanceof \Closure) {
             $this->client = $this->client->__invoke();
@@ -131,7 +131,7 @@ final class Redis implements \Countable, \IteratorAggregate
      */
     public function count(): int
     {
-        $client = $this->client();
+        $client = $this->realClient();
 
         return match ($client::class) {
             \RedisArray::class => \count($client->_hosts()),
@@ -151,7 +151,7 @@ final class Redis implements \Countable, \IteratorAggregate
      */
     public function getIterator(): \Traversable
     {
-        $client = $this->client();
+        $client = $this->realClient();
 
         if ($client instanceof \Redis) {
             yield $this;

@@ -18,7 +18,7 @@ final class RedisTest extends TestCase
      */
     public function create_proxy_from_dsn(string $dsn, string $expectedClient): void
     {
-        $this->assertInstanceOf($expectedClient, Redis::create($dsn)->client());
+        $this->assertInstanceOf($expectedClient, Redis::create($dsn)->realClient());
     }
 
     /**
@@ -37,7 +37,7 @@ final class RedisTest extends TestCase
     public function wrap(Redis $redis, string $expectedClient): void
     {
         $this->assertSame($redis, Redis::wrap($redis));
-        $this->assertInstanceOf($expectedClient, Redis::wrap($redis->client())->client());
+        $this->assertInstanceOf($expectedClient, Redis::wrap($redis->realClient())->realClient());
     }
 
     /**
