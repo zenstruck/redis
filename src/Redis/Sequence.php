@@ -230,7 +230,12 @@ final class Sequence
         return $this;
     }
 
-    public function multi(): self
+    /**
+     * Create a nested transaction within a sequence/pipeline.
+     *
+     * @throws \LogicException if within a transaction
+     */
+    public function transaction(): self
     {
         if ($this->transaction) {
             throw new \LogicException('Cannot create nested transaction.');
@@ -240,18 +245,32 @@ final class Sequence
     }
 
     /**
-     * @return list<mixed>|self
+     * Commit the nested transaction.
      */
-    public function exec(): array|self
+    public function commit(): self
+    {
+        if (!$this->nested) {
+            throw new \LogicException('Can only commit nested transactions.');
+        }
+
+        $ret = $this->redis->exec();
+
+        if ($this->nested->isClusterPipeline()) {
+            $this->nested->results[] = $ret;
+        }
+
+        return $this->nested;
+    }
+
+    /**
+     * Execute the sequence/pipeline/transaction and return the results.
+     *
+     * @return list<mixed>
+     */
+    public function execute(): array
     {
         if ($this->nested) {
-            $ret = $this->redis->exec();
-
-            if ($this->nested->isClusterPipeline()) {
-                $this->nested->results[] = $ret;
-            }
-
-            return $this->nested;
+            throw new \LogicException('Cannot execute nested transaction, call commit() first.');
         }
 
         if ($this->isClusterPipeline()) {

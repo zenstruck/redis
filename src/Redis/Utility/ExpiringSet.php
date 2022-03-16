@@ -33,7 +33,7 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
             ->zRemRangeByScore($this->key, 0, $time)
             ->zAdd($this->key, $time + $ttl, $value)
             ->zRangeByScore($this->key, $time, '+inf')
-            ->exec()
+            ->execute()
         ;
 
         $this->cachedList = $result[2];
@@ -47,7 +47,7 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
             ->zRemRangeByScore($this->key, 0, $time = \microtime(true))
             ->zRem($this->key, $value)
             ->zRangeByScore($this->key, $time, '+inf')
-            ->exec()
+            ->execute()
         ;
 
         $this->cachedList = $result[2];
@@ -74,7 +74,7 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
         $result = $this->client->transaction($this->key)
             ->zRemRangeByScore($this->key, 0, $time)
             ->zRangeByScore($this->key, $time, '+inf')
-            ->exec()
+            ->execute()
         ;
 
         return $this->cachedList = $result[1] ?? [];

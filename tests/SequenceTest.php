@@ -24,19 +24,19 @@ abstract class SequenceTest extends TestCase
                 ['44', 1],
             ],
             $this->createRedis()->sequence($this->transactionKey())
-                ->multi()
+                ->transaction()
                     ->set('x', '42')
                     ->incr('x')
-                ->exec()
+                ->commit()
                 ->incr('x')
-                ->multi()
+                ->transaction()
                     ->get('x')
                     ->del('x')
-                ->exec()
-                ->exec()
+                ->commit()
+                ->execute()
         );
 
-        $this->assertSame([], $this->createRedis()->sequence($this->transactionKey())->exec());
+        $this->assertSame([], $this->createRedis()->sequence($this->transactionKey())->execute());
     }
 
     /**
@@ -56,22 +56,49 @@ abstract class SequenceTest extends TestCase
                 ->incr('x')
                 ->get('x')
                 ->del('x')
-                ->exec()
+                ->execute()
         );
 
-        $this->assertSame([], $this->createRedis()->transaction($this->transactionKey())->exec());
+        $this->assertSame([], $this->createRedis()->transaction($this->transactionKey())->execute());
     }
 
     /**
      * @test
      */
-    public function cannot_call_multi_within_transaction(): void
+    public function cannot_call_transaction_within_transaction(): void
     {
         $sequence = $this->createRedis()->transaction($this->transactionKey());
 
         $this->expectException(\LogicException::class);
 
-        $sequence->multi();
+        $sequence->transaction();
+    }
+
+    /**
+     * @test
+     */
+    public function cannot_commit_non_nested_transaction(): void
+    {
+        $sequence = $this->createRedis()->transaction($this->transactionKey());
+
+        $this->expectException(\LogicException::class);
+
+        $sequence->commit();
+    }
+
+    /**
+     * @test
+     */
+    public function cannot_execute_nested_transaction(): void
+    {
+        $sequence = $this->createRedis()
+            ->sequence($this->transactionKey())
+            ->transaction()
+        ;
+
+        $this->expectException(\LogicException::class);
+
+        $sequence->execute();
     }
 
     protected function transactionKey(): ?string

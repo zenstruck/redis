@@ -8,10 +8,6 @@ parameters:
             message: '#.+#'
             path: src/Redis/DsnFactory.php
         -
-            message: "#^Cannot access offset 1|2 on array\\<int, mixed\\>\\|Zenstruck\\\\Redis\\\\Sequence\\.$#"
-            count: 3
-            path: src/Redis/Utility/ExpiringSet.php
-        -
             message: "#^Cannot call method add\\(\\) on DateTime\\|false\\.$#"
             count: 1
             path: src/Redis/Utility/ExpiringSet.php
