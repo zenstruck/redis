@@ -19,20 +19,18 @@ abstract class SequenceTest extends TestCase
     {
         $this->assertSame(
             [
-                [true, 43],
+                true,
+                43,
                 44,
-                ['44', 1],
+                '44',
+                1,
             ],
             $this->createRedis()->sequence($this->transactionKey())
-                ->transaction()
-                    ->set('x', '42')
-                    ->incr('x')
-                ->commit()
+                ->set('x', '42')
                 ->incr('x')
-                ->transaction()
-                    ->get('x')
-                    ->del('x')
-                ->commit()
+                ->incr('x')
+                ->get('x')
+                ->del('x')
                 ->execute()
         );
 
@@ -46,20 +44,18 @@ abstract class SequenceTest extends TestCase
     {
         $this->assertSame(
             [
-                'alias1' => [true, 'alias2' => 43],
-                'alias3' => 44,
-                2 => ['alias4' => '44', 1 => 1],
+                0 => true,
+                'alias1' => 43,
+                'alias2' => 44,
+                'alias3' => '44',
+                4 => 1,
             ],
             $this->createRedis()->sequence($this->transactionKey())
-                ->transaction()
-                    ->set('x', '42')
-                    ->incr('x')->as('alias2')
-                ->commit()->as('alias1')
-                ->incr('x')->as('alias3')
-                ->transaction()
-                    ->get('x')->as('alias4')
-                    ->del('x')
-                ->commit()
+                ->set('x', '42')
+                ->incr('x')->as('alias1')
+                ->incr('x')->as('alias2')
+                ->get('x')->as('alias3')
+                ->del('x')
                 ->execute()
         );
 
@@ -115,45 +111,6 @@ abstract class SequenceTest extends TestCase
     /**
      * @test
      */
-    public function cannot_call_transaction_within_transaction(): void
-    {
-        $sequence = $this->createRedis()->transaction($this->transactionKey());
-
-        $this->expectException(\LogicException::class);
-
-        $sequence->transaction();
-    }
-
-    /**
-     * @test
-     */
-    public function cannot_commit_non_nested_transaction(): void
-    {
-        $sequence = $this->createRedis()->transaction($this->transactionKey());
-
-        $this->expectException(\LogicException::class);
-
-        $sequence->commit();
-    }
-
-    /**
-     * @test
-     */
-    public function cannot_execute_nested_transaction(): void
-    {
-        $sequence = $this->createRedis()
-            ->sequence($this->transactionKey())
-            ->transaction()
-        ;
-
-        $this->expectException(\LogicException::class);
-
-        $sequence->execute();
-    }
-
-    /**
-     * @test
-     */
     public function cannot_alias_if_no_command_run(): void
     {
         $sequence = $this->createRedis()->sequence($this->transactionKey());
@@ -161,21 +118,6 @@ abstract class SequenceTest extends TestCase
         $this->expectException(\LogicException::class);
 
         $sequence->as('alias');
-    }
-
-    /**
-     * @test
-     */
-    public function cannot_alias_if_no_nested_transaction_command_run(): void
-    {
-        $sequence = $this->createRedis()->sequence($this->transactionKey())
-            ->set('x', 'y')->as('alias1')
-            ->transaction()
-        ;
-
-        $this->expectException(\LogicException::class);
-
-        $sequence->as('alias2');
     }
 
     protected function transactionKey(): ?string

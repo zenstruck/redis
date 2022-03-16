@@ -212,11 +212,8 @@ final class Sequence
     /**
      * @internal
      */
-    public function __construct(
-        private \Redis|\RedisCluster $redis,
-        private bool $transaction,
-        private ?self $nested = null
-    ) {
+    public function __construct(private \Redis|\RedisCluster $redis, private bool $transaction)
+    {
     }
 
     /**
@@ -230,7 +227,7 @@ final class Sequence
             $this->results[] = $ret;
         }
 
-        $this->map[] = \count($this->map);
+        $this->map[] = null;
 
         return $this;
     }
@@ -247,45 +244,11 @@ final class Sequence
 
         $lastKey = \array_key_last($this->map);
 
-        $this->map[$alias] = $this->map[$lastKey];
+        $this->map[$alias] = null;
 
         unset($this->map[$lastKey]);
 
         return $this;
-    }
-
-    /**
-     * Create a nested transaction within a sequence/pipeline.
-     *
-     * @throws \LogicException if within a transaction
-     */
-    public function transaction(): self
-    {
-        if ($this->transaction) {
-            throw new \LogicException('Cannot create nested transaction.');
-        }
-
-        return new self($this->redis->multi(), true, $this);
-    }
-
-    /**
-     * Commit the nested transaction.
-     */
-    public function commit(): self
-    {
-        if (!$this->nested) {
-            throw new \LogicException('Can only commit nested transactions.');
-        }
-
-        $ret = $this->redis->exec();
-
-        if ($this->nested->isClusterPipeline()) {
-            $this->nested->results[] = $ret;
-        }
-
-        $this->nested->map[] = $this->map;
-
-        return $this->nested;
     }
 
     /**
@@ -295,27 +258,10 @@ final class Sequence
      */
     public function execute(): array
     {
-        if ($this->nested) {
-            throw new \LogicException('Cannot execute nested transaction, call commit() first.');
-        }
-
-        $results = $this->isClusterPipeline() ? $this->results : (\is_array($result = $this->redis->exec()) ? $result : []);
-        $ret = [];
-        $count = 0;
-
-        foreach ($this->map as $alias => $value) {
-            if (\is_array($value)) {
-                foreach ($value as $subAlias => $subValue) {
-                    $ret[$alias][$subAlias] = $results[$count][$subValue];
-                }
-            } else {
-                $ret[$alias] = $results[$count];
-            }
-
-            ++$count;
-        }
-
-        return $ret;
+        return \array_combine(
+            \array_keys($this->map),
+            $this->isClusterPipeline() ? $this->results : (\is_array($result = $this->redis->exec()) ? $result : [])
+        );
     }
 
     private function isClusterPipeline(): bool
