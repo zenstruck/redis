@@ -25,13 +25,13 @@ Creating a proxy is done via a _DSN_ string. Here are some examples:
 ```php
 use Zenstruck\Redis;
 
-$proxy = Redis::create('redis://localhost'); // Zenstruck\Redis wrapping \Redis
+$proxy = Redis::create('redis://localhost'); // Zenstruck\Redis<\Redis>
 
-$proxy = Redis::create('redis://localhost?redis_sentinel=sentinel_service'); // Zenstruck\Redis wrapping \Redis (using Redis Sentinel)
+$proxy = Redis::create('redis://localhost?redis_sentinel=sentinel_service'); // Zenstruck\Redis<\Redis> (using Redis Sentinel)
 
-$proxy = Redis::create('redis:?host[host1]&host[host2]'); // Zenstruck\Redis wrapping \RedisArray
+$proxy = Redis::create('redis:?host[host1]&host[host2]'); // Zenstruck\Redis<\RedisArray>
 
-$proxy = Redis::create('redis:?host[host1]&host[host2]&redis_cluster=1'); // Zenstruck\Redis wrapping \RedisCluster
+$proxy = Redis::create('redis:?host[host1]&host[host2]&redis_cluster=1'); // Zenstruck\Redis<\RedisCluster>
 ```
 
 **NOTE:** Add `?prefix={my-prefix}` to the DSN to prefix all keys.

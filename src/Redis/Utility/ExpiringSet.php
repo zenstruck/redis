@@ -13,11 +13,15 @@ use Zenstruck\Redis;
  */
 final class ExpiringSet implements \Countable, \IteratorAggregate
 {
+    /** @var Redis<\Redis|\RedisArray|\RedisCluster> */
     private Redis $client;
 
     /** @var list<mixed> */
     private array $cachedList;
 
+    /**
+     * @param \Redis|\RedisArray|\RedisCluster|Redis<\Redis|\RedisArray|\RedisCluster> $client
+     */
     public function __construct(private string $key, \Redis|\RedisArray|\RedisCluster|Redis $client)
     {
         $this->client = Redis::wrap($client);

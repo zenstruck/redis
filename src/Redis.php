@@ -9,9 +9,12 @@ use Zenstruck\Redis\Utility\ExpiringSet;
 /**
  * @author Kevin Bond <kevinbond@gmail.com>
  *
- * @mixin \Redis
+ * @template T
  *
- * @implements \IteratorAggregate<int,Redis>
+ * @mixin \Redis
+ * @mixin T
+ *
+ * @implements \IteratorAggregate<int,Redis<T>>
  */
 final class Redis implements \Countable, \IteratorAggregate
 {
@@ -44,6 +47,12 @@ final class Redis implements \Countable, \IteratorAggregate
 
     /**
      * Create an instance from an existing PhpRedis instance.
+     *
+     * @template U of \Redis|\RedisArray|\RedisCluster
+     *
+     * @param U|self<U> $client
+     *
+     * @return self<U>
      */
     public static function wrap(self|\Redis|\RedisArray|\RedisCluster $client): self
     {
@@ -59,6 +68,8 @@ final class Redis implements \Countable, \IteratorAggregate
      * until the first command is called.
      *
      * @param array<string,mixed> $options {@see DsnFactory::DEFAULT_OPTIONS}
+     *
+     * @return self<\Redis|\RedisArray|\RedisCluster>
      */
     public static function create(string $dsn, array $options = []): self
     {

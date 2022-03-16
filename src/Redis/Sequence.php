@@ -215,6 +215,8 @@ final class Sequence
 
     /**
      * @internal
+     *
+     * @param \Redis|\RedisCluster|Redis<\Redis|\RedisArray|\RedisCluster> $redis
      */
     public function __construct(private \Redis|\RedisCluster|Redis $redis, private bool $transaction)
     {
