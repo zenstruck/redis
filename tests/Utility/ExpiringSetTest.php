@@ -121,14 +121,14 @@ final class ExpiringSetTest extends TestCase
 
     /**
      * @test
-     * @dataProvider redisProvider
+     * @dataProvider expiryValuesProvider
      */
-    public function add_with_seconds(Redis $redis): void
+    public function expiry_values(Redis $redis, callable $expiry): void
     {
         $set = $redis->expiringSet('set_key');
 
-        $current = \time();
-        $set->add('foo', 50);
+        $current = \microtime(true);
+        $set->add('foo', $expiry());
 
         $expiry = $redis->zRange('set_key', 0, -1, true)['foo'];
 
@@ -136,20 +136,16 @@ final class ExpiringSetTest extends TestCase
         $this->assertLessThan($current + 52, $expiry);
     }
 
-    /**
-     * @test
-     * @dataProvider redisProvider
-     */
-    public function add_with_date_interval(Redis $redis): void
+    public static function expiryValuesProvider(): \Traversable
     {
-        $set = $redis->expiringSet('set_key');
-
-        $current = \time();
-        $set->add('foo', \DateInterval::createFromDateString('50 seconds'));
-
-        $expiry = $redis->zRange('set_key', 0, -1, true)['foo'];
-
-        $this->assertGreaterThanOrEqual($current + 50, $expiry);
-        $this->assertLessThan($current + 52, $expiry);
+        foreach (self::redisProvider() as [$client]) {
+            yield [$client, fn() => 50];
+            yield [$client, fn() => '50'];
+            yield [$client, fn() => 50.0];
+            yield [$client, fn() => '50.0'];
+            yield [$client, fn() => \DateInterval::createFromDateString('50 seconds')];
+            yield [$client, fn() => new \DateTime('+50 secs')];
+            yield [$client, fn() => new \DateTimeImmutable('+50 secs')];
+        }
     }
 }

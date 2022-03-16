@@ -27,17 +27,30 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
         $this->client = Redis::wrap($client);
     }
 
-    public function add(mixed $value, int|\DateInterval $ttl): self
+    /**
+     * @param int|float          $expiry time-to-live in seconds
+     * @param \DateInterval      $expiry time-to-live
+     * @param \DateTimeInterface $expiry specific expiry timestamp
+     */
+    public function add(mixed $value, int|float|\DateInterval|\DateTimeInterface $expiry): self
     {
-        if ($ttl instanceof \DateInterval) {
-            $ttl = (float) \DateTime::createFromFormat('U', '0')->add($ttl)->format('U.u');
+        $time = \microtime(true);
+
+        if (\is_numeric($expiry)) {
+            $expiry = $time + $expiry;
         }
 
-        $time = \microtime(true);
+        if ($expiry instanceof \DateTimeInterface) {
+            $expiry = (float) $expiry->format('U.u');
+        }
+
+        if ($expiry instanceof \DateInterval) {
+            $expiry = $time + (float) \DateTime::createFromFormat('U', '0')->add($expiry)->format('U.u');
+        }
 
         $result = $this->client->transaction()
             ->zRemRangeByScore($this->key, 0, $time)
-            ->zAdd($this->key, $time + $ttl, $value)
+            ->zAdd($this->key, $expiry, $value)
             ->zRangeByScore($this->key, $time, '+inf')->as('list')
             ->execute()
         ;
