@@ -17,13 +17,13 @@ final class ExpiringSetTest extends TestCase
      * @test
      * @dataProvider redisProvider
      */
-    public function can_push_get_and_clear(Redis $redis): void
+    public function can_add_get_remove_and_clear(Redis $redis): void
     {
         $set = $redis->expiringSet('set_key');
 
         $this->assertSame(0, $redis->exists('set_key'));
 
-        $set->push('foo', 60);
+        $set->add('foo', 60);
 
         $this->assertSame(1, $redis->exists('set_key'));
         $this->assertCount(1, $set);
@@ -31,7 +31,7 @@ final class ExpiringSetTest extends TestCase
         $this->assertSame(['foo'], \iterator_to_array($set));
         $this->assertTrue($set->contains('foo'));
 
-        $set->push('bar', 60)->push('baz', 60)->prune();
+        $set->add('bar', 60)->add('baz', 60)->prune();
 
         $this->assertCount(3, $set);
         $this->assertSame(['foo', 'bar', 'baz'], $set->all());
@@ -39,6 +39,14 @@ final class ExpiringSetTest extends TestCase
         $this->assertTrue($set->contains('foo'));
         $this->assertTrue($set->contains('bar'));
         $this->assertTrue($set->contains('baz'));
+
+        $set->remove('invalid')->remove('baz');
+
+        $this->assertCount(2, $set);
+        $this->assertSame(['foo', 'bar'], $set->all());
+        $this->assertSame(['foo', 'bar'], \iterator_to_array($set));
+        $this->assertTrue($set->contains('foo'));
+        $this->assertTrue($set->contains('bar'));
 
         $this->assertEmpty($set->clear());
         $this->assertSame(0, $redis->exists('set_key'));
@@ -52,7 +60,7 @@ final class ExpiringSetTest extends TestCase
     {
         $set = $redis->expiringSet('set_key');
 
-        $set->push('foo', 60)->push('foo', 60)->push('foo', 60);
+        $set->add('foo', 60)->add('foo', 60)->add('foo', 60);
 
         $this->assertCount(1, $set);
     }
@@ -65,7 +73,7 @@ final class ExpiringSetTest extends TestCase
     {
         $set = $redis->expiringSet('set_key');
 
-        $set->push('foo', 60)->push('bar', 60);
+        $set->add('foo', 60)->add('bar', 60);
 
         $this->assertCount(2, $set);
         $this->assertSame(['foo', 'bar'], $set->all());
@@ -101,12 +109,12 @@ final class ExpiringSetTest extends TestCase
      * @test
      * @dataProvider redisProvider
      */
-    public function push_auto_prunes(Redis $redis): void
+    public function add_auto_prunes(Redis $redis): void
     {
         $redis->zAdd('set_key', \time() + 60, 'foo');
         $redis->zAdd('set_key', 60, 'bar');
 
-        $set = $redis->expiringSet('set_key')->push('baz', 60);
+        $set = $redis->expiringSet('set_key')->add('baz', 60);
 
         $this->assertSame(['foo', 'baz'], $set->all());
     }
@@ -115,12 +123,12 @@ final class ExpiringSetTest extends TestCase
      * @test
      * @dataProvider redisProvider
      */
-    public function push_with_seconds(Redis $redis): void
+    public function add_with_seconds(Redis $redis): void
     {
         $set = $redis->expiringSet('set_key');
 
         $current = \time();
-        $set->push('foo', 50);
+        $set->add('foo', 50);
 
         $expiry = $redis->zRange('set_key', 0, -1, true)['foo'];
 
@@ -132,12 +140,12 @@ final class ExpiringSetTest extends TestCase
      * @test
      * @dataProvider redisProvider
      */
-    public function push_with_date_interval(Redis $redis): void
+    public function add_with_date_interval(Redis $redis): void
     {
         $set = $redis->expiringSet('set_key');
 
         $current = \time();
-        $set->push('foo', \DateInterval::createFromDateString('50 seconds'));
+        $set->add('foo', \DateInterval::createFromDateString('50 seconds'));
 
         $expiry = $redis->zRange('set_key', 0, -1, true)['foo'];
 

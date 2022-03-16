@@ -21,7 +21,7 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
         $this->client = Redis::wrap($client);
     }
 
-    public function push(mixed $value, int|\DateInterval $ttl): self
+    public function add(mixed $value, int|\DateInterval $ttl): self
     {
         if ($ttl instanceof \DateInterval) {
             $ttl = (float) \DateTime::createFromFormat('U', '0')->add($ttl)->format('U.u');
@@ -32,6 +32,19 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
         $this->client->transaction($this->key)
             ->zRemRangeByScore($this->key, 0, $time)
             ->zAdd($this->key, $time + $ttl, $value)
+            ->exec()
+        ;
+
+        unset($this->cachedList);
+
+        return $this;
+    }
+
+    public function remove(mixed $value): self
+    {
+        $this->client->transaction($this->key)
+            ->zRemRangeByScore($this->key, 0, \microtime(true))
+            ->zRem($this->key, $value)
             ->exec()
         ;
 
