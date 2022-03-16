@@ -206,6 +206,9 @@ final class Sequence
     /** @var list<mixed> */
     private array $results = [];
 
+    /** @var array<array-key,mixed> */
+    private array $map = [];
+
     /**
      * @internal
      */
@@ -226,6 +229,23 @@ final class Sequence
         if ($this->isClusterPipeline()) {
             $this->results[] = $ret;
         }
+
+        $this->map[] = \count($this->map);
+
+        return $this;
+    }
+
+    public function as(string $alias): self
+    {
+        if (!$this->map) {
+            throw new \LogicException('Cannot call as() before calling command.');
+        }
+
+        $lastKey = \array_key_last($this->map);
+
+        $this->map[$alias] = $this->map[$lastKey];
+
+        unset($this->map[$lastKey]);
 
         return $this;
     }
@@ -259,13 +279,15 @@ final class Sequence
             $this->nested->results[] = $ret;
         }
 
+        $this->nested->map[] = $this->map;
+
         return $this->nested;
     }
 
     /**
      * Execute the sequence/pipeline/transaction and return the results.
      *
-     * @return list<mixed>
+     * @return array<array-key,mixed>
      */
     public function execute(): array
     {
@@ -273,11 +295,23 @@ final class Sequence
             throw new \LogicException('Cannot execute nested transaction, call commit() first.');
         }
 
-        if ($this->isClusterPipeline()) {
-            return $this->results;
+        $results = $this->isClusterPipeline() ? $this->results : (\is_array($result = $this->redis->exec()) ? $result : []);
+        $ret = [];
+        $count = 0;
+
+        foreach ($this->map as $alias => $value) {
+            if (\is_array($value)) {
+                foreach ($value as $subAlias => $subValue) {
+                    $ret[$alias][$subAlias] = $results[$count][$subValue];
+                }
+            } else {
+                $ret[$alias] = $results[$count];
+            }
+
+            ++$count;
         }
 
-        return \is_array($result = $this->redis->exec()) ? $result : [];
+        return $ret;
     }
 
     private function isClusterPipeline(): bool

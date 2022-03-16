@@ -32,11 +32,11 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
         $result = $this->client->transaction($this->key)
             ->zRemRangeByScore($this->key, 0, $time)
             ->zAdd($this->key, $time + $ttl, $value)
-            ->zRangeByScore($this->key, $time, '+inf')
+            ->zRangeByScore($this->key, $time, '+inf')->as('list')
             ->execute()
         ;
 
-        $this->cachedList = $result[2];
+        $this->cachedList = $result['list'];
 
         return $this;
     }
@@ -46,11 +46,11 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
         $result = $this->client->transaction($this->key)
             ->zRemRangeByScore($this->key, 0, $time = \microtime(true))
             ->zRem($this->key, $value)
-            ->zRangeByScore($this->key, $time, '+inf')
+            ->zRangeByScore($this->key, $time, '+inf')->as('list')
             ->execute()
         ;
 
-        $this->cachedList = $result[2];
+        $this->cachedList = $result['list'];
 
         return $this;
     }
@@ -73,11 +73,11 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
 
         $result = $this->client->transaction($this->key)
             ->zRemRangeByScore($this->key, 0, $time)
-            ->zRangeByScore($this->key, $time, '+inf')
+            ->zRangeByScore($this->key, $time, '+inf')->as('list')
             ->execute()
         ;
 
-        return $this->cachedList = $result[1] ?? [];
+        return $this->cachedList = $result['list'] ?? [];
     }
 
     public function prune(): self
