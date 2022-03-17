@@ -31,7 +31,7 @@ redis[s]://[pass@][ip|host|socket[:port]][/db-index][?{option}={value}...]
 It is recommended to use the proxy whenever possible. It has the following
 benefits over using the _real_ client:
 
-1. **Lazy**: the _real_ client is not instantiated until a Redis command is actually called.
+1. **Lazy**: a connection is not established until a Redis command is actually called.
 2. **Encapsulated**: for the most part, knowledge of the _real_ client is not required.
    You don't need to change your usage depending on the client used. _There are
    [some](#sequencespipelines-and-transactions) [exceptions](#countableiterable) to this._
