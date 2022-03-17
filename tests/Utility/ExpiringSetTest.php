@@ -177,6 +177,7 @@ final class ExpiringSetTest extends TestCase
         $this->assertTrue($set->contains(['foo']));
         $this->assertTrue($set->contains(17));
         $this->assertTrue($set->contains(null));
+        $this->assertFalse($set->contains('foo'));
 
         if (\Redis::SERIALIZER_JSON === $type) {
             $this->assertTrue($set->contains(['foo' => 'bar']));
