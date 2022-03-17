@@ -32,7 +32,7 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
     }
 
     /**
-     * @param T                  $expiry
+     * @param T                  $value
      * @param int|float          $expiry time-to-live in seconds
      * @param \DateInterval      $expiry time-to-live
      * @param \DateTimeInterface $expiry specific expiry timestamp
