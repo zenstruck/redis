@@ -127,6 +127,8 @@ final class Redis implements \Countable, \IteratorAggregate
 
     /**
      * Create a new {@see ExpiringSet}.
+     *
+     * @return ExpiringSet<mixed>
      */
     public function expiringSet(string $key): ExpiringSet
     {

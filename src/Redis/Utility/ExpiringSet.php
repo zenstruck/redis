@@ -9,7 +9,9 @@ use Zenstruck\Redis;
  *
  * @author Kevin Bond <kevinbond@gmail.com>
  *
- * @implements \IteratorAggregate<int,mixed>
+ * @template T
+ *
+ * @implements \IteratorAggregate<int,T>
  */
 final class ExpiringSet implements \Countable, \IteratorAggregate
 {
@@ -30,9 +32,12 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
     }
 
     /**
+     * @param T                  $expiry
      * @param int|float          $expiry time-to-live in seconds
      * @param \DateInterval      $expiry time-to-live
      * @param \DateTimeInterface $expiry specific expiry timestamp
+     *
+     * @return self<T>
      */
     public function add(mixed $value, int|float|\DateInterval|\DateTimeInterface $expiry): self
     {
@@ -65,6 +70,11 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
         return $this;
     }
 
+    /**
+     * @param T $value
+     *
+     * @return self<T>
+     */
     public function remove(mixed $value): self
     {
         $result = $this->client->transaction()
@@ -79,6 +89,9 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
         return $this;
     }
 
+    /**
+     * @param T $value
+     */
     public function contains(mixed $value): bool
     {
         if (!$this->usingSerialization()) {
@@ -97,7 +110,7 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
     }
 
     /**
-     * @return list<mixed>
+     * @return T[]
      */
     public function all(): array
     {
@@ -116,6 +129,9 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
         return $this->cachedList = $result['list'] ?? [];
     }
 
+    /**
+     * @return self<T>
+     */
     public function prune(): self
     {
         $this->client->zRemRangeByScore($this->key, 0, \microtime(true));
@@ -125,6 +141,9 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
         return $this;
     }
 
+    /**
+     * @return self<T>
+     */
     public function clear(): self
     {
         $this->client->del($this->key);
