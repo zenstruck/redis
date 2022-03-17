@@ -28,6 +28,11 @@ final class DsnFactory
         'failover' => 'none',
         'ssl' => null, // see https://php.net/context.ssl
         'prefix' => null,
+
+        /**
+         * One of: "php", "igbinary", "json", or {@see \Redis::SERIALIZER_*}.
+         */
+        'serializer' => null,
     ];
 
     public function __construct(private string $dsn, private array $options = [])
@@ -180,11 +185,7 @@ final class DsnFactory
                 throw new \InvalidArgumentException(\sprintf('Redis connection "%s" failed: ', $this->dsn).$e->getMessage());
             }
 
-            if ($params['prefix']) {
-                $redis->setOption(\Redis::OPT_PREFIX, $params['prefix']);
-            }
-
-            return $redis;
+            return self::configureClient($redis, $params);
         }
 
         if (\is_a($class, \RedisArray::class, true)) {
@@ -209,11 +210,7 @@ final class DsnFactory
                 $redis->setOption(\Redis::OPT_TCP_KEEPALIVE, $params['tcp_keepalive']);
             }
 
-            if ($params['prefix']) {
-                $redis->setOption(\Redis::OPT_PREFIX, $params['prefix']);
-            }
-
-            return $redis;
+            return self::configureClient($redis, $params);
         }
 
         if (\is_a($class, \RedisCluster::class, true)) {
@@ -241,11 +238,7 @@ final class DsnFactory
                 case 'slaves': $redis->setOption(\RedisCluster::OPT_SLAVE_FAILOVER, \RedisCluster::FAILOVER_DISTRIBUTE_SLAVES); break;
             }
 
-            if ($params['prefix']) {
-                $redis->setOption(\Redis::OPT_PREFIX, $params['prefix']);
-            }
-
-            return $redis;
+            return self::configureClient($redis, $params);
         }
 
         if (\class_exists($class, false)) {
@@ -253,5 +246,24 @@ final class DsnFactory
         }
 
         throw new \InvalidArgumentException(\sprintf('Class "%s" does not exist.', $class));
+    }
+
+    private static function configureClient(\Redis|\RedisArray|\RedisCluster $client, array $params): \Redis|\RedisArray|\RedisCluster
+    {
+        if ($params['prefix']) {
+            $client->setOption(\Redis::OPT_PREFIX, $params['prefix']);
+        }
+
+        if ($params['serializer']) {
+            $client->setOption(\Redis::OPT_SERIALIZER, match ($params['serializer']) {
+                'php' => \Redis::SERIALIZER_PHP,
+                'json' => \Redis::SERIALIZER_JSON,
+                'igbinary' => \Redis::SERIALIZER_IGBINARY,
+                'msgpack' => \Redis::SERIALIZER_MSGPACK,
+                default => $params['serializer'],
+            });
+        }
+
+        return $client;
     }
 }

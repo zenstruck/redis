@@ -19,6 +19,8 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
     /** @var list<mixed> */
     private array $cachedList;
 
+    private bool $usingSerialization;
+
     /**
      * @param \Redis|\RedisArray|\RedisCluster|Redis<\Redis|\RedisArray|\RedisCluster> $client
      */
@@ -34,6 +36,10 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
      */
     public function add(mixed $value, int|float|\DateInterval|\DateTimeInterface $expiry): self
     {
+        if (!\is_scalar($value) && null !== $value && !$this->usingSerialization()) {
+            throw new \LogicException('Cannot add non-scalar values as the Redis client was not configured with serialization.');
+        }
+
         $time = \microtime(true);
 
         if (\is_numeric($expiry)) {
@@ -48,14 +54,13 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
             $expiry = $time + (float) \DateTime::createFromFormat('U', '0')->add($expiry)->format('U.u');
         }
 
-        $result = $this->client->transaction()
+        $this->client->transaction()
             ->zRemRangeByScore($this->key, 0, $time)
             ->zAdd($this->key, $expiry, $value)
-            ->zRangeByScore($this->key, $time, '+inf')->as('list')
             ->execute()
         ;
 
-        $this->cachedList = $result['list'];
+        unset($this->cachedList);
 
         return $this;
     }
@@ -76,7 +81,19 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
 
     public function contains(mixed $value): bool
     {
-        return \in_array($value, $this->all(), false);
+        if (!$this->usingSerialization()) {
+            return \in_array($value, $this->all(), false);
+        }
+
+        $type = \gettype($value);
+
+        foreach ($this->all() as $member) {
+            if (($type === \gettype($member) || (\is_scalar($value) && \is_scalar($member))) && $member == $value) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -124,5 +141,10 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
     public function count(): int
     {
         return \count($this->all());
+    }
+
+    private function usingSerialization(): bool
+    {
+        return $this->usingSerialization ??= (bool) \array_values((array) $this->client->getOption(\Redis::OPT_SERIALIZER))[0];
     }
 }

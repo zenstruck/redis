@@ -31,16 +31,19 @@ final class ExpiringSetTest extends TestCase
         $this->assertSame(['foo'], \iterator_to_array($set));
         $this->assertTrue($set->contains('foo'));
 
-        $set->add('bar', 60)->add('baz', 60)->prune();
+        $set->add('bar', 60)->add(17, 60)->add(null, 60)->prune();
 
-        $this->assertCount(3, $set);
-        $this->assertSame(['foo', 'bar', 'baz'], $set->all());
-        $this->assertSame(['foo', 'bar', 'baz'], \iterator_to_array($set));
+        $this->assertCount(4, $set);
+        $this->assertSame(['foo', 'bar', '17', ''], $set->all());
+        $this->assertSame(['foo', 'bar', '17', ''], \iterator_to_array($set));
         $this->assertTrue($set->contains('foo'));
         $this->assertTrue($set->contains('bar'));
-        $this->assertTrue($set->contains('baz'));
+        $this->assertTrue($set->contains('17'));
+        $this->assertTrue($set->contains(17));
+        $this->assertTrue($set->contains(null));
+        $this->assertTrue($set->contains(''));
 
-        $set->remove('invalid')->remove('baz');
+        $set->remove('invalid')->remove(17)->remove(null);
 
         $this->assertCount(2, $set);
         $this->assertSame(['foo', 'bar'], $set->all());
@@ -147,5 +150,60 @@ final class ExpiringSetTest extends TestCase
             yield [$client, fn() => new \DateTime('+50 secs')];
             yield [$client, fn() => new \DateTimeImmutable('+50 secs')];
         }
+    }
+
+    /**
+     * @test
+     * @dataProvider redisSerializerProvider
+     */
+    public function can_use_complex_values_with_serializer(Redis $redis, int $type): void
+    {
+        $obj = new \stdClass();
+        $obj->foo = 'bar';
+
+        $set = $redis->expiringSet('key')
+            ->add($obj, 60)
+            ->add(17, 60)
+            ->add(['foo'], 60)
+            ->add(null, 60)
+        ;
+
+        $values = $set->all();
+
+        $this->assertEquals(\Redis::SERIALIZER_JSON === $type ? ['foo' => 'bar'] : $obj, $values[0]);
+        $this->assertSame(17, $values[1]);
+        $this->assertSame(['foo'], $values[2]);
+        $this->assertNull($values[3]);
+        $this->assertTrue($set->contains(['foo']));
+        $this->assertTrue($set->contains(17));
+        $this->assertTrue($set->contains(null));
+
+        if (\Redis::SERIALIZER_JSON === $type) {
+            $this->assertTrue($set->contains(['foo' => 'bar']));
+        } else {
+            $this->assertTrue($set->contains($obj));
+        }
+
+        $set
+            ->remove(\Redis::SERIALIZER_JSON === $type ? ['foo' => 'bar'] : $obj)
+            ->remove(['foo'])
+            ->remove(17)
+            ->remove(null)
+        ;
+
+        $this->assertEmpty($set);
+    }
+
+    /**
+     * @test
+     * @dataProvider redisProvider
+     */
+    public function cannot_add_non_scalar_member_if_not_using_serialization(Redis $redis): void
+    {
+        $set = $redis->expiringSet('key');
+
+        $this->expectException(\LogicException::class);
+
+        $set->add(['arr'], 60);
     }
 }

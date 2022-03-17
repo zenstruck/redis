@@ -112,4 +112,37 @@ final class RedisTest extends TestCase
 
         $this->assertSame(\array_fill(0, $expectedCount, true), $results);
     }
+
+    /**
+     * @test
+     * @dataProvider redisProvider
+     */
+    public function default_serializer(Redis $redis): void
+    {
+        $redis->set('foo', ['bar']);
+        $redis->set('bar', new \stdClass());
+        $redis->set('baz', 17);
+
+        $this->assertSame(['Array', 'Object', '17'], $redis->mGet(['foo', 'bar', 'baz']));
+    }
+
+    /**
+     * @test
+     * @dataProvider redisSerializerProvider
+     */
+    public function can_configure_serializer(Redis $redis, int $type): void
+    {
+        $obj = new \stdClass();
+        $obj->foo = 'bar';
+
+        $redis->set('foo', ['bar']);
+        $redis->set('bar', $obj);
+        $redis->set('baz', 17);
+        $redis->set('qux', null);
+
+        $this->assertSame(['bar'], $redis->get('foo'));
+        $this->assertSame(17, $redis->get('baz'));
+        $this->assertEquals(\Redis::SERIALIZER_JSON === $type ? ['foo' => 'bar'] : $obj, $redis->get('bar'));
+        $this->assertNull($redis->get('qux'));
+    }
 }
