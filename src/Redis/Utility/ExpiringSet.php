@@ -77,14 +77,13 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
      */
     public function remove(mixed $value): self
     {
-        $result = $this->client->transaction()
-            ->zRemRangeByScore($this->key, 0, $time = \microtime(true))
+        $this->client->transaction()
+            ->zRemRangeByScore($this->key, 0, \microtime(true))
             ->zRem($this->key, $value)
-            ->zRangeByScore($this->key, $time, '+inf')->as('list')
             ->execute()
         ;
 
-        $this->cachedList = $result['list'];
+        unset($this->cachedList);
 
         return $this;
     }
@@ -94,19 +93,13 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
      */
     public function contains(mixed $value): bool
     {
-        if (!$this->usingSerialization()) {
-            return \in_array($value, $this->all(), false);
-        }
+        $result = $this->client->transaction()
+            ->zRemRangeByScore($this->key, 0, \microtime(true))
+            ->zRank($this->key, $value)->as('position')
+            ->execute()
+        ;
 
-        $type = \gettype($value);
-
-        foreach ($this->all() as $member) {
-            if (($type === \gettype($member) || (\is_scalar($value) && \is_scalar($member))) && $member == $value) {
-                return true;
-            }
-        }
-
-        return false;
+        return false !== $result['position'];
     }
 
     /**
@@ -159,7 +152,15 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
 
     public function count(): int
     {
-        return \count($this->all());
+        if (isset($this->cachedList)) {
+            return \count($this->cachedList);
+        }
+
+        return $this->client->transaction()
+            ->zRemRangeByScore($this->key, 0, \microtime(true))
+            ->zCard($this->key)->as('count')
+            ->execute()['count']
+        ;
     }
 
     private function usingSerialization(): bool
