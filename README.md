@@ -18,25 +18,33 @@ client until a command is executed.
 composer require zenstruck/redis
 ```
 
-## Create Proxy
+## Redis Factory
 
-Creating a proxy is done via a _DSN_ string. The DSN must use the following format:
+Creating a Redis client instance is done via a _DSN_ string. The DSN must use the following format:
 
 ```
-redis[s]://[pass@][ip|host|socket[:port]][/db-index][?prefix={prefix}]
+redis[s]://[pass@][ip|host|socket[:port]][/db-index][?{option}={value}...]
 ```
 
-Here are some examples:
+### Redis Proxy Factory
+
+It is recommended to use the proxy whenever possible. It has the following
+benefits over using the _real_ client:
+
+1. **Lazy**: the _real_ client is not instantiated until a Redis command is actually called.
+2. **Encapsulated**: for the most part, knowledge of the _real_ client is not required.
+   You don't need to change your usage depending on the client used. _There are
+   [some](#sequencespipelines-and-transactions) [exceptions](#countableiterable) to this._
+3. **Developer Experience (DX)**: use the [fluent sequence and transaction api](#sequencespipelines-and-transactions).
+
+Here are some examples creating the proxy from a DSN.
 
 ```php
 use Zenstruck\Redis;
 
 $proxy = Redis::create('redis://localhost'); // Zenstruck\Redis<\Redis>
-$proxy = Redis::create('redis://localhost?prefix=myapp:'); // Zenstruck\Redis<\Redis> (with all keys prefixed with "myapp:")
 $proxy = Redis::create('redis://localhost?redis_sentinel=sentinel_service'); // Zenstruck\Redis<\Redis> (using Redis Sentinel)
-
 $proxy = Redis::create('redis:?host[host1]&host[host2]'); // Zenstruck\Redis<\RedisArray>
-
 $proxy = Redis::create('redis:?host[host1]&host[host2]&redis_cluster=1'); // Zenstruck\Redis<\RedisCluster>
 ```
 
@@ -50,7 +58,7 @@ use Zenstruck\Redis;
 $proxy = Redis::wrap($client)
 ```
 
-### Create Client
+### Redis _Real_ Client Factory
 
 An instance of `\Redis|\RedisArray|\RedisCluster` can be created directly:
 
@@ -58,15 +66,49 @@ An instance of `\Redis|\RedisArray|\RedisCluster` can be created directly:
 use Zenstruck\Redis;
 
 $client = Redis::createClient('redis://localhost'); // \Redis
-
 $client = Redis::createClient('redis://localhost?redis_sentinel=sentinel_service'); // \Redis (using Redis Sentinel)
-
 $client = Redis::createClient('redis:?host[host1]&host[host2]'); // \RedisArray
-
 $client = Redis::createClient('redis:?host[host1]&host[host2]&redis_cluster=1'); // \RedisCluster
 ```
 
-## Proxy API
+### Factory Options
+
+Certain Redis options can be set via your _DSN_'s query parameters or passed
+as an array to the second parameter of `Zenstruck\Redis::create/createClient()`.
+
+#### Prefix
+
+You can set a prefix for all keys:
+
+```php
+use Zenstruck\Redis;
+
+$proxy = Redis::create('redis://localhost?prefix=app:');
+$proxy = Redis::create('redis://localhost', ['prefix' => 'app:']); // equivalent to above
+```
+
+#### Serializer Option
+
+By default, Redis stores all scalar/null values as strings and objects/arrays
+as "Array"/"Object". In order to store properly typed values and objects/arrays,
+you must configure a Redis serializer:
+
+```php
+use Zenstruck\Redis;
+
+// PHP: serialize/unserialize values
+$proxy = Redis::create('redis://localhost?serializer=php');
+$proxy = Redis::create('redis://localhost', ['serializer' => \Redis::SERIALIZER_PHP]); // equivalent to above
+
+// JSON: json_encode/json_decode values (doesn't work for objects)
+$proxy = Redis::create('redis://localhost?serializer=json');
+$proxy = Redis::create('redis://localhost', ['serializer' => \Redis::SERIALIZER_JSON]); // equivalent to above
+```
+
+**NOTE**: There is a performance trade off when using Redis serialization. Consider
+creating a separate client for operations/logic that requires serialization.
+
+## Redis Proxy API
 
 ```php
 /** @var Zenstruck\Redis $proxy */
@@ -78,32 +120,6 @@ $proxy->get('mykey'); // "value"
 // get the "real" client
 $proxy->realClient(); // \Redis|\RedisArray|\RedisCluster
 ```
-
-### Countable\Iterable
-
-`Zenstruck\Redis` is countable and iterable. There are some differences when
-counting/iterating depending on the underlying client:
-
-- `\Redis`: count is always 1 and iterates over itself once
-- `\RedisArray`: count is the number of hosts and iterates over each host wrapped
-  in a proxy.
-- `\RedisCluser`: count is the number of _masters_ and iterates over each _master_
-  with _node parameters_ pre-set. This enables running [node commands](https://github.com/phpredis/phpredis/blob/develop/cluster.markdown#directed-node-commands)
-  on each _master_ without passing node parameters to these commands (when iterating)
-
-```php
-/** @var Zenstruck\Redis $proxy */
-
-$proxy->count(); // 1 if \Redis, # hosts if \RedisArray, # "masters" if \RedisCluster
-
-foreach ($proxy as $node) {
-    $proxy->flushAll(); // this is permitted even for \RedisCluster (which typically requires a $nodeParams argument)
-}
-```
-
-**NOTE:** If running commands that require being run on each host/_master_ it is recommended
-to iterate and run even if using `\Redis`. This allows a seamless transition to
-`\RedisArray`/`\RedisCluster` later.
 
 ### Sequences/Pipelines and Transactions
 
@@ -143,6 +159,32 @@ atomically as pipelines are not supported.
 **NOTE:** When using `sequence()`/`transaction()` with a `\RedisArray` instance, the
 first command in the sequence/transaction must be a "key-based command"
 (ie `get()`/`set()`). This is to choose the node the transaction is run on.
+
+### Countable\Iterable
+
+`Zenstruck\Redis` is countable and iterable. There are some differences when
+counting/iterating depending on the underlying client:
+
+- `\Redis`: count is always 1 and iterates over itself once
+- `\RedisArray`: count is the number of hosts and iterates over each host wrapped
+  in a proxy.
+- `\RedisCluser`: count is the number of _masters_ and iterates over each _master_
+  with _node parameters_ pre-set. This enables running [node commands](https://github.com/phpredis/phpredis/blob/develop/cluster.markdown#directed-node-commands)
+  on each _master_ without passing node parameters to these commands (when iterating)
+
+```php
+/** @var Zenstruck\Redis $proxy */
+
+$proxy->count(); // 1 if \Redis, # hosts if \RedisArray, # "masters" if \RedisCluster
+
+foreach ($proxy as $node) {
+    $proxy->flushAll(); // this is permitted even for \RedisCluster (which typically requires a $nodeParams argument)
+}
+```
+
+**NOTE:** If running commands that require being run on each host/_master_ it is recommended
+to iterate and run even if using `\Redis`. This allows a seamless transition to
+`\RedisArray`/`\RedisCluster` later.
 
 ## Utilities
 
@@ -188,6 +230,9 @@ $set
 ;
 ```
 
+**NOTE**: In order to use complex types (arrays/objects) as members, your redis
+client must be [configured with a serializer](#serializer-option).
+
 Below is a pseudocode example using this object for tracking active users on a
 website. When authenticated users login or request a page, their username is added
 to the set with a 5-minute idle time-to-live (TTL). A user is considered _active_
@@ -224,7 +269,7 @@ foreach ($users as $user) {
 
 ### Symfony Framework
 
-Add a supported Redis [DSN](#create-proxy) environment variable:
+Add a supported Redis [DSN](#redis-factory) environment variable:
 
 ```bash
 # .env
@@ -253,6 +298,12 @@ services:
         class: Zenstruck\Redis
         factory: ['Zenstruck\Redis', 'create']
         arguments: ['%env(REDIS_DSN)%', { prefix: 'prefix2:' }]
+
+    # Separate proxy that uses PHP serialization
+    serialization_redis:
+        class: Zenstruck\Redis
+        factory: ['Zenstruck\Redis', 'create']
+        arguments: ['%env(REDIS_DSN)%', { serializer: php }]
 
     # expiring set service
     active_users:
