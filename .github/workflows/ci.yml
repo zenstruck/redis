@@ -55,10 +55,38 @@ jobs:
           php: ${{ matrix.php }}
           deps: ${{ matrix.deps }}
 
-#  code-coverage:
-#    uses: zenstruck/.github/.github/workflows/php-coverage-codecov.yml@main
-#    with:
-#      php: 8.1
+  code-coverage:
+    name: Code Coverage
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:6.0.0
+        ports:
+          - 16379:6379
+      redis-cluster:
+        image: grokzen/redis-cluster:5.0.4
+        ports:
+          - 7000:7000
+          - 7001:7001
+          - 7002:7002
+          - 7003:7003
+          - 7004:7004
+          - 7005:7005
+          - 7006:7006
+        env:
+          STANDALONE: 1
+      redis-sentinel:
+        image: bitnami/redis-sentinel:6.0
+        ports:
+          - 26379:26379
+        env:
+          REDIS_MASTER_HOST: redis
+          REDIS_MASTER_SET: redis_sentinel
+          REDIS_SENTINEL_QUORUM: 1
+    steps:
+      - uses: zenstruck/.github@php-coverage-codecov
+        with:
+          php: 8.1
 
   composer-validate:
     uses: zenstruck/.github/.github/workflows/php-composer-validate.yml@main
