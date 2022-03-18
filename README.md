@@ -12,6 +12,9 @@ just using `\Redis`, and production, where you could be using `\RedisArray` or
 The proxy is lazy in that, if created via a DSN, doesn't instantiate the underlying
 client until a command is executed.
 
+This library integrates well with [Symfony](#symfony-framework) and a recipe is
+available.
+
 ## Installation
 
 ```bash
