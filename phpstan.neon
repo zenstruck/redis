@@ -11,3 +11,15 @@ parameters:
             message: "#^Cannot call method add\\(\\) on DateTime\\|false\\.$#"
             count: 1
             path: src/Redis/Utility/ExpiringSet.php
+        -
+            message: "#^Parameter \\#1 \\$client of class Zenstruck\\\\Redis constructor expects \\(callable\\(\\)\\: Redis\\|RedisArray\\|RedisCluster\\)\\|Redis\\|RedisArray\\|RedisCluster, bool\\|Redis\\|null given\\.$#"
+            count: 1
+            path: src/Redis.php
+        -
+            message: "#^Cannot call method multi\\(\\) on bool\\|Redis\\|RedisCluster\\|null\\.$#"
+            count: 1
+            path: src/Redis/Sequence.php
+        -
+            message: "#^Property Zenstruck\\\\Redis\\\\Sequence\\:\\:\\$redis \\(Redis\\|RedisCluster\\|Zenstruck\\\\Redis\\<Redis\\|RedisArray\\|RedisCluster\\>\\) does not accept bool\\|Redis\\|RedisCluster\\|null\\.$#"
+            count: 1
+            path: src/Redis/Sequence.php
