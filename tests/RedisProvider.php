@@ -20,9 +20,17 @@ trait RedisProvider
     {
         foreach (self::redisDsnProvider() as [$dsn, $class]) {
             yield [Redis::create($dsn, ['serializer' => 'php']), \Redis::SERIALIZER_PHP, $class];
-            yield [Redis::create($dsn, ['serializer' => 'igbinary']), \Redis::SERIALIZER_IGBINARY, $class];
+
+            if (\defined('Redis::SERIALIZER_IGBINARY')) {
+                yield [Redis::create($dsn, ['serializer' => 'igbinary']), \Redis::SERIALIZER_IGBINARY, $class];
+            }
+
             yield [Redis::create($dsn, ['serializer' => \Redis::SERIALIZER_PHP]), \Redis::SERIALIZER_PHP, $class];
-            yield [Redis::create($dsn, ['serializer' => \Redis::SERIALIZER_IGBINARY]), \Redis::SERIALIZER_IGBINARY, $class];
+
+            if (\defined('Redis::SERIALIZER_IGBINARY')) {
+                yield [Redis::create($dsn, ['serializer' => \Redis::SERIALIZER_IGBINARY]), \Redis::SERIALIZER_IGBINARY, $class];
+            }
+
             yield [Redis::create($dsn, ['serializer' => 'json']), \Redis::SERIALIZER_JSON, $class];
             yield [Redis::create($dsn, ['serializer' => \Redis::SERIALIZER_JSON]), \Redis::SERIALIZER_JSON, $class];
         }
