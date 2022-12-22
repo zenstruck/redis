@@ -30,7 +30,7 @@ jobs:
         ports:
           - 16379:6379
       redis-cluster:
-        image: grokzen/redis-cluster:5.0.4
+        image: grokzen/redis-cluster:latest
         ports:
           - 7000:7000
           - 7001:7001
@@ -64,7 +64,7 @@ jobs:
         ports:
           - 16379:6379
       redis-cluster:
-        image: grokzen/redis-cluster:5.0.4
+        image: grokzen/redis-cluster:latest
         ports:
           - 7000:7000
           - 7001:7001
@@ -114,3 +114,4 @@ jobs:
       - uses: zenstruck/.github@sync-with-template
         with:
           key: ${{ secrets.GPG_PRIVATE_KEY }}
+          token: ${{ secrets.COMPOSER_TOKEN }}
