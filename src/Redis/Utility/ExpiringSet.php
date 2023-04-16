@@ -168,8 +168,7 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
         return $this->client->transaction()
             ->zRemRangeByScore($this->key, 0, \microtime(true))
             ->zCard($this->key)->as('count')
-            ->execute()['count']
-        ;
+            ->execute()['count'];
     }
 
     private function usingSerialization(): bool
