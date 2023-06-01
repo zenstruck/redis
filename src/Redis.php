@@ -33,7 +33,7 @@ final class Redis implements \Countable, \IteratorAggregate
 
     /**
      * @param \Redis|\RedisArray|\RedisCluster|callable():(\Redis|\RedisArray|\RedisCluster) $client
-     * @param list<mixed>|null $node
+     * @param list<mixed>|null                                                               $node
      */
     private function __construct(callable|\Redis|\RedisArray|\RedisCluster $client, private ?array $node = null)
     {
