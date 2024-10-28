@@ -183,7 +183,7 @@ final class Redis implements \Countable, \IteratorAggregate
 
         if ($client instanceof \RedisArray) {
             foreach ($client->_hosts() as $host) {
-                yield new self($client->_instance($host));
+                yield new self($client->_instance($host)); // @phpstan-ignore-line
             }
 
             return;

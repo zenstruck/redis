@@ -136,7 +136,7 @@ final class ExpiringSet implements \Countable, \IteratorAggregate
      */
     public function prune(): self
     {
-        $this->client->zRemRangeByScore($this->key, 0, \microtime(true));
+        $this->client->zRemRangeByScore($this->key, '0', (string) \microtime(true));
 
         unset($this->cachedList);
 
