@@ -1,6 +1,6 @@
 # zenstruck/redis
 
-[![CI Status](https://github.com/zenstruck/redis/workflows/CI/badge.svg)](https://github.com/zenstruck/redis/actions?query=workflow%3ACI)
+[![CI](https://github.com/zenstruck/redis/actions/workflows/ci.yml/badge.svg)](https://github.com/zenstruck/redis/actions/workflows/ci.yml)
 [![Code Coverage](https://codecov.io/gh/zenstruck/redis/branch/1.x/graph/badge.svg?token=D7SCESSN3Q)](https://codecov.io/gh/zenstruck/redis)
 
 Lazy proxy for [php-redis](https://github.com/phpredis/phpredis) with DX helpers,
