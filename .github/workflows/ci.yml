@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php: [8.1, 8.2, 8.3, 8.4]
+        php: [8.1, 8.2, 8.3, 8.4, 8.5]
         deps: [highest]
         include:
           - php: 8.1
@@ -27,7 +27,7 @@ jobs:
         ports:
           - 16379:6379
     steps:
-      - uses: zenstruck/.github@php-test-symfony
+      - uses: zenstruck/.github/actions/php-test-symfony@main
         with:
           php: ${{ matrix.php }}
           deps: ${{ matrix.deps }}
@@ -41,7 +41,7 @@ jobs:
         ports:
           - 16379:6379
     steps:
-      - uses: zenstruck/.github@php-coverage-codecov
+      - uses: zenstruck/.github/actions/php-coverage-codecov@main
 
   composer-validate:
     uses: zenstruck/.github/.github/workflows/php-composer-validate.yml@main
@@ -55,7 +55,7 @@ jobs:
     if: (github.event_name == 'push' || github.event_name == 'schedule') && !startsWith(github.ref, 'refs/tags')
     runs-on: ubuntu-latest
     steps:
-      - uses: zenstruck/.github@php-cs-fixer
+      - uses: zenstruck/.github/actions/php-cs-fixer@main
         with:
           php: 8
           key: ${{ secrets.GPG_PRIVATE_KEY }}
@@ -66,7 +66,7 @@ jobs:
     if: (github.event_name == 'push' || github.event_name == 'schedule') && !startsWith(github.ref, 'refs/tags')
     runs-on: ubuntu-latest
     steps:
-      - uses: zenstruck/.github@sync-with-template
+      - uses: zenstruck/.github/actions/sync-with-template@main
         with:
           key: ${{ secrets.GPG_PRIVATE_KEY }}
           token: ${{ secrets.COMPOSER_TOKEN }}
