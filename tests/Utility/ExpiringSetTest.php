@@ -151,13 +151,13 @@ final class ExpiringSetTest extends TestCase
     public static function expiryValuesProvider(): \Traversable
     {
         foreach (self::redisProvider() as [$client]) {
-            yield [$client, fn() => 50];
-            yield [$client, fn() => '50'];
-            yield [$client, fn() => 50.0];
-            yield [$client, fn() => '50.0'];
-            yield [$client, fn() => \DateInterval::createFromDateString('50 seconds')];
-            yield [$client, fn() => new \DateTime('+50 secs')];
-            yield [$client, fn() => new \DateTimeImmutable('+50 secs')];
+            yield [$client, static fn() => 50];
+            yield [$client, static fn() => '50'];
+            yield [$client, static fn() => 50.0];
+            yield [$client, static fn() => '50.0'];
+            yield [$client, static fn() => \DateInterval::createFromDateString('50 seconds')];
+            yield [$client, static fn() => new \DateTime('+50 secs')];
+            yield [$client, static fn() => new \DateTimeImmutable('+50 secs')];
         }
     }
 
