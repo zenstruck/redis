@@ -12,15 +12,29 @@ env:
 
 jobs:
   tests:
-    name: PHP ${{ matrix.php }} - ${{ matrix.deps }}
+    name: PHP ${{ matrix.php }}, SF ${{ matrix.symfony }} - ${{ matrix.deps }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php: [8.1, 8.2, 8.3, 8.4, 8.5]
+        php: [8.2, 8.3, 8.4, 8.5, 8.6]
         deps: [highest]
+        symfony: [6.4.*, 7.4.*, 8.1.*, 8.2.*]
         include:
           - php: 8.1
+            deps: highest
+            symfony: 6.4.*
+          - php: 8.1
             deps: lowest
+            symfony: '*'
+        exclude:
+          - php: 8.2
+            symfony: 8.1.*
+          - php: 8.3
+            symfony: 8.1.*
+          - php: 8.2
+            symfony: 8.2.*
+          - php: 8.3
+            symfony: 8.2.*
     services:
       redis:
         image: redis:6
@@ -30,6 +44,7 @@ jobs:
       - uses: zenstruck/.github/actions/php-test-symfony@main
         with:
           php: ${{ matrix.php }}
+          symfony: ${{ matrix.symfony }}
           deps: ${{ matrix.deps }}
 
   code-coverage:
